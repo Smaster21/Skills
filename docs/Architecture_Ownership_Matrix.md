@@ -73,7 +73,8 @@ Only the owner may define truth.
 
 | Capability                      | Owner                               | Consumers      | Notes                          |
 | ------------------------------- | ----------------------------------- | -------------- | ------------------------------ |
-| Framework Governance            | 01 Master Architecture              | All            | Defines architecture and rules |
+| Framework Governance            | 01 Master Architecture              | All            | Defines architecture and rules; owns the framework identifier set (§30), including **Execution Scope Identity** (§30.1) |
+| Capability Health               | 01 Capability Registry              | All            | Observed capability state; transitions at deterministic checkpoints only |
 | Engineering Decisions           | 02 Decision Engine                  | All            | Sole decision authority        |
 | Framework Confidence            | 02 Decision Engine                  | 05,08,12,14,15 | Canonical; engine-local scores permitted (see Confidence Ownership) |
 | Risk Calculation                | 02 Decision Engine                  | 05,07,12,14,15 | Only one risk model            |

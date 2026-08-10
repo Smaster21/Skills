@@ -271,6 +271,179 @@ Each directory stores versioned historical records.
 
 ---
 
+## 7.1 Persistence Scope
+
+### The Store Persists Outside Any Execution
+
+The Learning Repository is the framework's **long-term memory** (§1). It
+therefore SHALL persist **outside any single execution's output directory**.
+
+A repository materialised inside an execution's own output directory cannot
+accumulate knowledge across executions, and cannot satisfy the retention periods
+this document already mandates in §29. Both are requirements of this document,
+so a per-execution store is non-compliant with it.
+
+The repository root is resolved from configuration through the hierarchy owned by
+`01` §29. This document defines no path convention beyond the structure above.
+
+### Partitioned By Execution Scope Identity
+
+The repository is partitioned by **Execution Scope Identity**, defined and owned
+by `01` §30.1.
+
+```text
+Learning Repository
+└── <Execution Scope Identity>
+    ├── executions/
+    ├── locators/
+    ├── healing/
+    ├── retries/
+    ├── coverage/
+    ├── performance/
+    ├── flaky-tests/
+    ├── risk/
+    ├── recommendations/
+    ├── browser-history/
+    ├── decision-history/
+    └── ai/
+```
+
+The partition is **conceptual**. The directory set is exactly the one already
+listed above — no record type is added, renamed, or removed, and **no new
+canonical dataset is created**. The `Learning Database` remains the single
+canonical dataset owned by this document.
+
+### Scope Is Consumed, Never Generated
+
+**Consumes Execution Scope Identity through the public contract defined by
+`01_Master_Architecture.md` §30.1.**
+
+This document SHALL NEVER generate, derive, redefine, or substitute a scope
+identity, and SHALL NEVER implement a normalizer. It uses the identity solely as
+a **partition key**.
+
+| Concern | Owner |
+| ------- | ----- |
+| Execution Scope Identity — definition and generation | **01** §30.1 |
+| URL normalization used in its derivation | **03** §18 |
+| Learning persistence | **10** (this document) |
+| Use of scope identity as a partition key | **10** (this document) |
+
+Using an identifier to partition data this document already owns grants this
+document no ownership of the identifier.
+
+---
+
+## 7.2 Scope Isolation
+
+### Accumulation Within A Scope
+
+Executions sharing one scope accumulate into that scope's history.
+
+```text
+Execution A ─┐
+Execution B ─┼─► Scope X history   (cumulative)
+Execution C ─┘
+```
+
+Record counts SHALL NOT reset because a new execution has begun. A count that
+decreases between executions of the same scope indicates the store was not
+persisted, and is a defect.
+
+### Isolation Between Scopes
+
+```text
+Application A → Scope X ─► Scope X history
+Application B → Scope Y ─► Scope Y history
+```
+
+Scope X history and Scope Y history are **disjoint**.
+
+There SHALL be no automatic sharing, no automatic merging, and no cross-scope
+contamination.
+
+### Cross-Scope Reads
+
+**Cross-scope reads are prohibited unless explicitly configured.**
+
+Where explicitly configured through `01` §29, a cross-scope read SHALL:
+
+- Be marked **foreign-scope evidence**
+- Remain distinguishable from current-scope evidence at every point of use
+- **Never** silently become native learning for the current scope
+- **Never** overwrite, mutate, or write into the foreign scope
+- Carry the scope it originated from
+
+Foreign-scope evidence is evidence, not history. It informs; it does not
+accumulate.
+
+This introduces no lifecycle state and no execution mode.
+
+---
+
+## 7.3 Cold Start
+
+A scope with no store is a **cold start**, not an error.
+
+```text
+Scope with no store
+        ↓
+Initialize an empty scoped store
+        ↓
+Execution proceeds
+        ↓
+Cold-start behaviour remains active
+```
+
+On a first-ever execution for a scope, the framework SHALL initialize an empty
+scoped store and complete normally.
+
+An absent or empty store SHALL NEVER halt execution, SHALL NEVER be reported as
+a failure, and SHALL NEVER be substituted with fabricated history or fabricated
+confidence (`01` §31).
+
+Existing cold-start behaviour elsewhere is unchanged — in particular `14` §30,
+where stop recommendations are withheld until sufficient history exists. That
+behaviour is consumed, not redefined here.
+
+---
+
+## 7.4 Cache Independence
+
+The Learning Repository is **canonical**. A cache is **not** — `01` §39 states a
+cache is *never the source of truth*.
+
+The learning store SHALL NEVER be hosted inside a cache region, and SHALL survive
+deletion of every cache region intact.
+
+```text
+delete all cache regions
+        ↓
+learning history remains
+```
+
+If learning is lost when caches are cleared, the store was not canonical and the
+implementation is defective.
+
+This creates no cache region and changes no cache ownership.
+
+---
+
+## 7.5 Snapshot Immutability Within An Execution
+
+The history an execution reads SHALL be **pinned at execution start** and remain
+immutable for the duration of that execution.
+
+An execution SHALL NEVER mutate the snapshot its own decisions are reading.
+Records produced by an execution are written for **subsequent** executions.
+
+This satisfies `01` §41, which requires cross-execution artifacts to be
+*"immutable and already persisted before this execution began"*, and preserves
+determinism (`01` §3.1): identical inputs plus an identical pinned snapshot
+produce identical results.
+
+---
+
 # 8. Learning Lifecycle
 
 Every learning update follows the same lifecycle.
@@ -957,6 +1130,26 @@ Versioning supports rollback and historical analysis.
 
 ---
 
+## 28.1 Versioning Operates Within A Scope
+
+Versioning is **scope-local**. Each Execution Scope Identity (§7.1) carries its
+own version sequence.
+
+```text
+Learning Repository
+├── Scope X  →  v1, v2, v3 …
+└── Scope Y  →  v1, v2, v3 …
+```
+
+Scope X at `v3` and Scope Y at `v1` are unrelated. A version number is meaningful
+only within its scope, and versions SHALL NEVER be compared across scopes.
+
+This is **repository and schema versioning**, exactly as defined above. It is not
+a scope identifier, and it introduces no second versioning system. Scope identity
+remains owned by `01` §30.1; version numbers remain owned here.
+
+---
+
 # 29. Repository Retention Policy
 
 Historical records may be archived according to organizational policy.
@@ -978,7 +1171,26 @@ Expired records shall be archived instead of silently deleted.
 
 ---
 
-# 30. Event Integration
+## 29.1 Retention Applies To The Persistent Scoped Store
+
+The retention periods above are measured against the **persistent scoped store**
+defined in §7.1 — never against a single execution's output directory.
+
+This clarification changes no retention period. Every value in the table above is
+unchanged.
+
+Its purpose is to make the existing requirement **achievable**. A store scoped to
+one execution cannot retain Execution History for five years, or Flaky Test
+History and Decision History without limit, because it ceases to exist when the
+execution ends. Measured against the persistent scoped store, the periods above
+are satisfiable as written.
+
+Retention is applied **per scope**. Expiry within one scope SHALL NEVER affect
+another scope, and archival SHALL preserve the scope a record belonged to.
+
+Historical records SHALL NOT be deleted, rewritten, or re-keyed merely because
+scope persistence was introduced. Records that cannot be attributed to a scope
+are retained and marked, never discarded (§7.2).
 
 The Learning Repository publishes framework events.
 

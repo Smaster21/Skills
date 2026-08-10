@@ -33,6 +33,39 @@ Behave like an experienced Senior QA Automation Engineer, not a code generator
 
 ---
 
+# 0. Framework Identity
+
+This is an **AI-powered QA engineering framework** for understanding web
+applications and deciding what to verify about them.
+
+It:
+
+- **understands** an application — crawls it, observes its runtime, classifies
+  components, and builds a canonical application model;
+- **decides** — evaluates evidence, rules, risk and policy before acting, and
+  records every decision with its reasoning;
+- **plans** — derives coverage, workflows, priorities and a browser matrix;
+- **generates** — produces Playwright + TypeScript automation from verified
+  locators, never from raw HTML;
+- **executes** — orchestrates browsers, workers, contexts and timeouts;
+- **diagnoses** — classifies failures and separates target defects from suite
+  defects and from environment artifacts;
+- **reports** — renders every format from one normalized model, disclosing what
+  was not covered;
+- **learns** — accumulates historical knowledge per application scope and
+  recommends improvements for future executions.
+
+Playwright is the **execution tool**, not the product. This framework is
+therefore **not** a Playwright generator, a Selenium wrapper, or a test-script
+generator. A run that emits scripts without evidence, decisions and disclosed
+scope has not done the job.
+
+The two authorities that make it a framework rather than a generator are `02`
+(what happens) and `07` (how it runs). Everything else produces knowledge,
+plans, artifacts or recommendations.
+
+---
+
 # 1. Document Registry
 
 18 documents. All verified present. Load `01` first, then the Matrix, then
@@ -406,6 +439,55 @@ Skipping all four `°` states traverses exactly the v3.0 sequence, in v3.0 order
 
 ---
 
+# 4A. Execution Flow — End To End
+
+The same 21 states and 16 phases, read as one causal chain. **This section adds no
+state and no phase** — it is a reading aid for the model above and §5 below.
+
+```
+Request + authorized target
+        ↓                       ← authorization verified first (§9); missing → STOP
+Scope + governance validation    01 §30.1 scope identity · 01 §29 configuration
+        ↓
+Discovery                        03 · Phase 1
+        ↓
+Application / knowledge model    04 · Phase 2
+        ↓
+Locator verification             03 §29 → 06 §26 · Phase 3
+        ↓
+Risk + test planning             05 · Phase 4   (risk consumed from 02)
+        ↓
+Test generation                  06 · Phase 5
+        ↓
+Suite validation                 01 §18 · 06 §38 · Phase 6
+        ↓
+Execution orchestration          07 — sole runtime authority · Phase 7
+        ↓
+Browser / tool execution          07 §26, §27
+        ↓
+Evidence collection              02 §18 · Phase 9
+        ↓
+Per-item evidence confidence     PLAYBOOK §19
+        ↓
+Evidence Quality                 PLAYBOOK §19 → 02 §21's 0.35 term
+        ↓
+Decision evaluation              02 §15 pipeline
+        ↓
+Framework Confidence             02 §21 — sole authority
+        ↓
+Diagnostics + reporting          01 §23 · 09 · Phase 10
+        ↓
+Learning                         10 · Phase 11
+        ↓
+Next execution's decisions       10 §7.5 pinned snapshot
+```
+
+Evidence flows **forward** into decisions and **across executions** into learning.
+An execution never reads history it is concurrently writing (`10` §7.5), and
+same-execution dependencies flow downward only (`01` §41).
+
+---
+
 # 5. Phase Dispatch
 
 16 phases, per `01` §16. Read the owning document **before** entering its phase.
@@ -554,6 +636,175 @@ inputs, evidence, candidates, rejected alternatives, winner, confidence, audit.
 
 ---
 
+# 5A. Evidence, Evidence Quality, And Framework Confidence
+
+This chain is **operationally mandatory**. A run that produces tests and reports
+but not this chain has not satisfied the framework.
+
+```
+Real execution observation
+        ↓
+Evidence Object                  02 §18   (id · type · source · confidence · timestamp · payload)
+        ↓
+Per-item evidence confidence     PLAYBOOK §19
+        ↓
+Evidence Quality                 PLAYBOOK §19 → 02 §21's Evidence Quality term
+        ↓
+02 §21 Confidence Engine         + Historical Reliability · Rule Agreement · Environment Stability
+        ↓
+Framework Confidence             02 §21 — the only value reportable as "confidence"
+        ↓
+Decision · execution · report artifacts
+```
+
+## Evidence Objects
+
+- Evidence Objects are produced from **real execution observations** — a live DOM
+  read, a probe result, a measured latency, a persisted artifact.
+- Evidence SHALL NEVER be fabricated, manually manufactured, or back-filled to
+  satisfy a criterion (`01` §31).
+- Specification text is **not** runtime evidence and SHALL NEVER be converted
+  into it (§7A).
+- Every applicable Evidence Object carries a **measured** `confidence`. A
+  hand-authored confidence value is a defect, not evidence.
+- Evidence with an empty required field is still evidence — it scores lower. It
+  is never silently completed.
+
+## Evidence Quality
+
+- Evidence Quality is **derived from the measured Evidence Objects** of the
+  decision it belongs to.
+- It is **not a second confidence model**. It is one **input term** of `02` §21's
+  existing model.
+- The measurement procedure — completeness, directness, corroboration, rounding,
+  clamping, aggregation — belongs to **`PLAYBOOK` §19**. Do not reimplement it
+  here and do not compute it a second way.
+- Empty evidence SHALL fail safely per `PLAYBOOK` §19 and `02` §5.5:
+  `evidenceQuality` is **undefined** and the decision is refused
+  `INSUFFICIENT_EVIDENCE`. It is never zero and never defaulted.
+
+## Framework Confidence — `02` §21 is the sole authority
+
+`02` §21 owns the framework's **single** confidence model. Its four terms and
+their existing weights are:
+
+| `02` §21 term | Weight | Measurement procedure |
+|---|---:|---|
+| Evidence Quality | 0.35 | `PLAYBOOK` §19 |
+| Historical Reliability | 0.25 | `PLAYBOOK` §20.1 |
+| Rule Agreement | 0.20 | `PLAYBOOK` §20.2 |
+| Environment Stability | 0.20 | `PLAYBOOK` §20.3 |
+
+These are **`02` §21's existing terms and weights — not a new model.** They sum
+to 1.00 and SHALL NOT be reweighted, replaced, duplicated, or relocated.
+
+- Every other component **supplies observations** to `02` through its existing
+  contract. None of them computes confidence.
+- No component may publish a competing Framework Confidence value. Engine-local
+  scores (`08`, `14`, `15`) are evidence submitted to `02` (§3).
+- Framework Confidence is computed **only when all four terms are available**.
+- Where any term is unavailable, `02` **refuses** the value and **names every**
+  unavailable term. A partial confidence score SHALL NEVER be produced.
+
+## The three `PLAYBOOK` §20 term measurements
+
+Surface only. The procedures are owned by `PLAYBOOK` §20 through `02` §21's
+contract; read them there before relying on a value.
+
+| Term | What it measures | What it is NOT |
+|---|---|---|
+| **Historical Reliability** (`§20.1`) | Framework **lifecycle** reliability across eligible prior executions of the current **Execution Scope Identity** (`01` §30.1), read from the pinned snapshot (`10` §7.5) | **Not test pass rate.** A target defect SHALL NEVER reduce framework reliability — finding real defects is success, not unreliability |
+| **Rule Agreement** (`§20.2`) | How consistently the **applicable evaluated rules** already recorded in `02` §39 agree with the selected candidate | **Not a new rule system.** `02` §19 remains the only Rule Engine. `02` §19's `Confidence Modifier` SHALL NEVER be read — it would be a second path into confidence |
+| **Environment Stability** (`§20.3`) | How nominally the target behaved during the **pre-execution** verification window (`07` §17, §31 · `PLAYBOOK` §18) | **Not during-execution health.** Feeding `07` §40's continuous health back in would let the outcome being scored influence the term that scores it |
+
+## Unavailable measurements
+
+An unavailable term is a **named state**, never a number:
+
+| State | Term | Source |
+|---|---|---|
+| `NO_HISTORY` | Historical Reliability | `PLAYBOOK` §20.1 |
+| `INSUFFICIENT_HISTORY` | Historical Reliability | `PLAYBOOK` §20.1 |
+| `NO_APPLICABLE_RULES` | Rule Agreement | `PLAYBOOK` §20.2 |
+| `RULE_OUTCOMES_NOT_RECORDED` | Rule Agreement | `PLAYBOOK` §20.2 |
+| `NO_ENVIRONMENT_OBSERVATION` | Environment Stability | `PLAYBOOK` §20.3 |
+| `NO_LATENCY_REFERENCE` | Environment Stability | `PLAYBOOK` §20.3 |
+| `INSUFFICIENT_EVIDENCE` | Evidence Quality, and the decision itself | `PLAYBOOK` §19 · `02` §5.5 |
+| `MISSING_TERM` | Framework Confidence, naming each absent term | `02` §21 · `02` §5.5 |
+
+`PLAYBOOK` §20.1's D-3 additionally requires a refusal when `W` or
+`minimumExecutions` is not resolvable through `01` §29; the implementation
+records this as `NO_HISTORY_CONFIGURATION`.
+
+**An unavailable measurement SHALL NEVER be replaced with `0`, `50`, `100`, a
+configured default, a previous execution's value, or an inferred value.** A
+cold-start scope with no history is a legitimate unavailable state, not an error,
+and SHALL NEVER halt execution (`10` §7.3).
+
+## Persistence — no new artifact
+
+All three destinations already exist:
+
+| Value | Recorded in | Owner |
+|---|---|---|
+| Per-item evidence confidence | the `confidence` field of the Evidence Object | `02` §18 |
+| Evidence Quality | the decision's evidence record | `02` §36 |
+| Framework Confidence, and each term's value or unavailable reason | the decision audit record | `02` §39 |
+
+No dataset, file, or schema is created for this chain.
+
+---
+
+# 5B. Artifact Ownership And Identity
+
+Artifacts persist under their **existing** owners. Never invent a destination,
+and never claim ownership of another engine's artifact.
+
+| Artifact | Owner | Canonical document |
+|---|---|---|
+| Discovery snapshot, component inventory, verified inventory | **03** | `03` §11, §29, §31 |
+| Knowledge Graph, graph version, graph diff | **04** | `04` §30 |
+| Test Plan, canonical coverage | **05** | `05` §32 |
+| Generated tests, Page Objects, fixtures | **06** | `06` §30, §40 |
+| Runtime Schedule, execution history, deviation record | **07** | `07` §39 |
+| Locator History | **08** | `08` |
+| Reports, analytics | **09** | `09` §33 |
+| Learning Database | **10** | `10` §13, §7.1 |
+| Decision history, evidence record, decision audit | **02** | `02` §36, §38, §39 |
+
+## Identity — consumed, never redefined
+
+| Identity | Owner | Used for |
+|---|---|---|
+| **Test Case Identity** | **06** §22.1 | Stable identity of a test across regeneration |
+| **Execution ID / Correlation ID** | **01** §30 | One run, one causal chain |
+| **Execution Scope Identity** | **01** §30.1 | *Which application* this run is about; the historical partition key for `10` |
+
+This file, and every engine, **consumes** these identities. None generates,
+redefines, or substitutes one, and no second identity system exists. `projectId`
+from the test runner identifies a browser project and SHALL NEVER be used as a
+scope identity (`01` §30.1).
+
+## Event model
+
+Components communicate through the **Event Bus** (`01` §27), which `07` §38
+integrates with published and subscribed lifecycle events. Publish and subscribe
+through that contract rather than invoking engines directly. This file defines no
+event type; the Core Event set is `01` §27's.
+
+## Learning
+
+Learning is **downstream of real observations** (`10`). It accumulates per
+Execution Scope Identity (`10` §7.2), is pinned immutable within an execution
+(`10` §7.5), and treats a cold start as normal (`10` §7.3).
+
+`10` **recommends only.** It SHALL NEVER fabricate an observation, become a
+second decision authority, compute confidence, modify tests, Page Objects or
+configuration, or introduce a lifecycle state. `02` decides whether a
+recommendation applies.
+
+---
+
 # 6. Failure Handling
 
 | Situation | Action |
@@ -569,6 +820,26 @@ inputs, evidence, candidates, rejected alternatives, winner, confidence, audit.
 | **Re-plan** | Observation → Evidence → **Re-plan Request** → `02` → `05` → `15` → `06` → Validation → Execution. Runtime SHALL NEVER generate tests directly. |
 | **Recovery** | Classify first (`08` §16), then `02` approves. Preserve evidence across recovery. |
 | **Environment interstitial** | Classified as an **environment issue**, ordered ahead of every other rule. Never scored as a regression (Playbook §15). |
+| **Evidence set empty** | `evidenceQuality` undefined → refuse the decision `INSUFFICIENT_EVIDENCE` (`02` §5.5). Never zero, never defaulted (§5A). |
+| **A `02` §21 term unavailable** | `02` refuses Framework Confidence with `MISSING_TERM`, naming every absent term. The decision still proceeds on rules, policy and risk; only the confidence value is refused (§5A). |
+| **No history for this scope** | Cold start is normal (`10` §7.3). Historical Reliability is `NO_HISTORY`; execution SHALL NOT halt and the absence SHALL NOT be reported as a failure. |
+| **Required measurement input missing** | Refuse with the named state. Never substitute `0`, `50`, `100`, a default, a previous value, or an inferred value. |
+
+## Failure Classification
+
+Classify **before** considering any recovery (`08` §16). The classification
+determines what the failure means and whether healing is even permitted:
+
+| Classification | Meaning | Healing |
+|---|---|---|
+| `LOCATOR` | The element exists; its address drifted | Permitted, under `02` approval and `08` §32 limits |
+| `ASSERTION` | An expectation was not met — usually a **target defect** | **Prohibited** (`08` §13) |
+| `ENVIRONMENT` | The target or infrastructure misbehaved | Prohibited; not a regression |
+| Business logic · backend · auth · security · data corruption | Real defects | **Prohibited** (`08` §13) |
+
+A target defect and a suite defect are different findings and SHALL be reported
+separately (§9). Evidence SHALL be preserved across every recovery attempt and
+every terminal state, including `FAILED` and `CANCELLED`.
 
 ## Degradation Ledger
 
@@ -602,6 +873,39 @@ presented as complete.
 | **Runtime layering** — same-execution dependencies flow downward only; cross-execution historical reads are exempt and never block | `01` §41 |
 | **Artifact ownership ≠ runtime authority** — `12` owns a proposal; `07` alone schedules | Matrix, `01` §40 |
 | **Reasoning precedes routing** — the QA Reasoning Layer (§3A) reasons before a request is raised; it owns nothing, decides nothing, and persists nothing | §3A |
+| **Evidence is observed, never authored** — Evidence Objects come from real execution observations; each applicable one carries a measured confidence | `02` §18, `PLAYBOOK` §19 |
+| **One Evidence Quality measurement** — derived from measured Evidence Objects; an input term of `02` §21, not a second model | `PLAYBOOK` §19 |
+| **Unavailable is a state, not a number** — no term is ever substituted with `0`, `50`, `100`, a default, a previous value, or an inference | `02` §5.5, `01` §31 |
+| **Confidence is all-or-nothing** — computed only when all four `02` §21 terms are available; otherwise refused with every absent term named | `02` §21 |
+| **Specification is not runtime** — a documented requirement is never evidence that it happened | §7A |
+
+---
+
+# 7A. Validation Tiers — Specification Is Not Runtime
+
+Four distinct claims. They are **not** interchangeable, and conflating them is a
+reporting defect (`01` §31, `PLAYBOOK` §16).
+
+| Tier | Question | Sufficient evidence |
+|---|---|---|
+| **Specification validation** | Does the architecture *say* this must happen? | A document and section reference |
+| **Implementation validation** | Does the implementation *contain* the behaviour? | Source plus a passing unit/integration test |
+| **Runtime validation** | Did the framework *do* it against a real authorized target? | Artifacts produced by that execution |
+| **Evidence validation** | Can a persisted value be *traced and recomputed*? | The artifact path, its inputs, and a reproduction |
+
+> **Specification PASS is not Runtime PASS.**
+>
+> **Implementation test PASS is not Runtime PASS.**
+
+Report the tier you actually have:
+
+- `PASS` — observed at the tier claimed, with the artifact path.
+- `NOT DEMONSTRATED` — the framework ran, but this property was not observable.
+- `BLOCKED` — execution could not legitimately proceed.
+- `FAIL` — execution proceeded and a required invariant was violated.
+
+`NOT PRODUCED` is the honest answer for an artifact that does not exist. Never
+infer it from another artifact, and never create it to satisfy a check.
 
 ---
 
@@ -620,6 +924,16 @@ environment (Playbook §9). Native mobile automation is a future capability
 ---
 
 # 9. On Invocation
+
+## Before anything else — authorization
+
+0. **Establish the authorized target.** Use only a target the user has explicitly
+   authorized. If the target or its authorization is **missing or ambiguous**,
+   **STOP and report `BLOCKED`**. SHALL NEVER discover, select, invent, or
+   substitute a target, and SHALL NEVER carry authorization forward from a
+   previous run to a new one.
+
+Then:
 
 1. Read **`01`** in full. Highest architectural authority.
 2. Read the **Ownership Matrix**. Never implement a capability another engine owns.
@@ -640,11 +954,46 @@ environment (Playbook §9). Native mobile automation is a future capability
 Required engines only — `02`–`07` and `09`. This is exactly the v3.0 pipeline and
 is always valid. Enable `08` and `10`–`15` as the target's scale justifies.
 
+## Governance The Executing Agent Enforces
+
+These hold in every run, and are the reason a run may legitimately stop:
+
+- **Authorized targets only.** Missing or ambiguous authorization → `BLOCKED`.
+- **Never substitute a target**, and never scan an unrelated system.
+- **Preserve historical artifacts.** A previous execution's output is immutable
+  evidence. Never modify, overwrite, or append to it.
+- **Keep runtime artifacts inside the current execution's own boundary.**
+- **Preserve ownership.** Never implement a capability another engine owns, and
+  never become the owner of an artifact you consume (§3, Matrix).
+- **Preserve confidence ownership** — `02` §21 only — and **Evidence Quality
+  ownership** — `PLAYBOOK` §19 as `02`'s term (§5A).
+- **Preserve identity ownership** — `06` §22.1, `01` §30, `01` §30.1 (§5B).
+- **Introduce nothing new**: no engine, dataset, lifecycle state, phase,
+  identifier authority, ownership authority, confidence model, or Evidence
+  Quality model.
+- **Never modify a frozen document** unless the current task explicitly
+  authorizes it.
+- **Never fabricate evidence** to satisfy a criterion, and never convert
+  specification evidence into runtime evidence (§7A).
+- Report `NOT DEMONSTRATED` when runtime evidence does not exist, `BLOCKED` when
+  execution cannot legitimately proceed, and `NOT PRODUCED` for an artifact that
+  was never created.
+
+If satisfying a requirement would need any of the prohibited changes above,
+**STOP and report the exact conflict.** Do not invent a resolution.
+
 ## Before Reporting
 
 State which optional engines ran, which were skipped, and what was not verified.
 Reconcile every number against the runner's own output. Separate target defects
 from suite defects, and environment failures from application failures.
+
+State the **validation tier** of every claim (§7A), and give the artifact path
+for each reported value. For the evidence chain, report the Evidence Object
+count, the per-item confidences, `evidenceQuality`, and either Framework
+Confidence or the named unavailable terms (§5A). A capped, optimized,
+early-stopped, incrementally-discovered, single-browser or credential-limited run
+SHALL NEVER be presented as complete.
 
 ---
 

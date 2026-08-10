@@ -456,9 +456,94 @@ Each capability includes:
 - Dependencies
 - Configuration
 - Status (Enabled/Disabled)
+- **Health (Healthy/Degraded/Unavailable/Unknown)**
 - Owner Component
 
 The Decision Engine queries the Capability Registry before invoking any feature.
+
+---
+
+## 7.1 Status And Health Are Orthogonal
+
+`Status` and `Health` describe different things and SHALL NEVER be conflated.
+
+| Field | Expresses | Set by | Changes |
+| ----- | --------- | ------ | ------- |
+| **Status** | **Configuration intent** — is this capability permitted to be used? | Configuration Layer (§29) | Only by configuration |
+| **Health** | **Observed runtime condition** — is this capability actually working? | Capability Registry, on a Decision Engine decision | Only at deterministic checkpoints (§7.3) |
+
+Both fields are always present. Neither implies the other.
+
+A capability may be `Enabled` and `Unavailable` — permitted but currently broken.
+A capability may be `Disabled` and `Healthy` — working, but not authorised for use.
+
+Configuration SHALL NEVER be inferred from health, and health SHALL NEVER be
+inferred from configuration.
+
+---
+
+## 7.2 Health Values
+
+| Value | Meaning |
+| ----- | ------- |
+| **Healthy** | Observed working within expected parameters |
+| **Degraded** | Observed working, but outside expected parameters |
+| **Unavailable** | Observed not working |
+| **Unknown** | Not yet observed this execution — the default |
+
+### Unknown Is The Default
+
+Every capability begins each execution at `Health: Unknown` and remains there
+until observed. `Unknown` is not a failure.
+
+**`Unknown` SHALL NEVER independently gate execution.** An unobserved capability
+is not a broken capability, and treating it as one would block every first
+execution and every capability the run does not exercise.
+
+Where a gate requires a health condition, that gate SHALL specify which values
+satisfy it. `Unknown` alone SHALL NOT cause a stop.
+
+---
+
+## 7.3 Health Transitions
+
+Health is a **field of a registry record**, not a lifecycle state. It introduces
+no state in §17 and no phase in §16.
+
+Transitions SHALL occur **only at deterministic checkpoints** — the batch and
+workflow-group boundaries already used for checkpoint evaluation elsewhere in the
+framework. Health SHALL NEVER change mid-batch, on test-completion order, or on
+wall-clock elapse, because none of those is deterministic under parallel
+execution (§3.1).
+
+Two executions observing identical conditions at identical checkpoints SHALL
+produce an identical transition sequence.
+
+### Authority
+
+Health is **observed** by the engines that encounter the capability, **decided**
+by the Decision Engine, and **recorded** by the Capability Registry.
+
+```
+Observation  →  Decision Engine (§6)  →  Capability Registry records
+```
+
+The Registry SHALL NOT decide. No engine SHALL write health directly. This
+introduces no authority: §6 already holds sole decision authority, and the
+Registry already holds capability state.
+
+Every transition SHALL be logged with its timestamp, the evidence that prompted
+it, and the decision that authorised it (§30).
+
+---
+
+## 7.4 Backward Compatibility
+
+`Status` is unchanged in name, values, and meaning.
+
+A registry record carrying no `Health` value is read as `Health: Unknown`.
+Capabilities registered before this amendment therefore remain valid without
+modification, and behaviour is unchanged until a health observation occurs.
 --------------------------------------------------------------------------------
 
 # 8. Knowledge Graph
@@ -1071,6 +1156,8 @@ Timestamp
 
 Correlation ID
 
+**Execution Scope Identity**
+
 Producer
 
 Consumer
@@ -1078,6 +1165,11 @@ Consumer
 Payload
 
 Validation Status
+
+Execution Scope Identity is defined by §30.1 and owned by this document. It is
+carried on every contract so that any consumer can determine which application a
+payload belongs to without inferring it. Where no scope is supplied, the field
+carries the default scope (§30.1).
 
 ---
 
@@ -1977,6 +2069,15 @@ During execution:
 
 ✓ Healing Audited
 
+✓ Capability Health Recorded
+
+Capability Health Recorded is satisfied when every health transition observed at
+a checkpoint has been recorded in the Capability Registry with its evidence and
+authorising decision (§7.3).
+
+A capability at `Health: Unknown` satisfies this gate. `Unknown` means unobserved,
+not unrecorded, and SHALL NOT cause the gate to fail (§7.2).
+
 After execution:
 
 ✓ Reports Generated
@@ -2342,11 +2443,91 @@ Execution ID
 
 Correlation ID
 
+**Execution Scope Identity**
+
 Framework Version
 
 Configuration Version
 
 Knowledge Graph Version
+
+---
+
+## 30.1 Execution Scope Identity
+
+### Purpose
+
+Execution Scope Identity answers one question no existing identifier answers:
+
+> **Which application is this execution about?**
+
+Every existing identifier distinguishes *one run from another*. None distinguishes
+*one application from another*. Without it, knowledge accumulated for one
+application cannot be kept separate from knowledge accumulated for a different
+one.
+
+### Ownership
+
+Execution Scope Identity is a **framework-wide identifier owned by this document**,
+alongside the identifiers listed above.
+
+It SHALL NOT be owned by any engine. Documents `04`, `05`, `09`, and `10` all
+require scope isolation; if any single engine owned the identifier, the other
+three would depend on a peer, violating the dependency layering of §41.
+
+Ownership of the identifier is separate from ownership of any behaviour keyed by
+it. An engine MAY use scope identity to partition data it already owns; doing so
+grants it no ownership of the identifier.
+
+### Distinction From Existing Identifiers
+
+| Identifier | Distinguishes | Cardinality |
+| ---------- | ------------- | ----------- |
+| **Execution Scope Identity** | **One application from another** | **Many executions share one scope** |
+| Execution ID | One run from another | One per execution |
+| Correlation ID | One causal chain from another | One per execution, propagated |
+| Plan ID | One test plan from another | One or more per execution |
+| Framework Version | One framework release from another | One per execution |
+| Configuration Version | One configuration from another | One per execution |
+| Knowledge Graph Version | One graph snapshot from another | One or more per execution |
+
+**Execution Scope Identity is the only identifier that is deliberately stable
+across executions.** Every other identifier above changes, or may change, from
+run to run. Scope identity persists precisely so that successive runs of the same
+application are recognisable as such.
+
+### Not Playwright's Project ID
+
+`projectId` as emitted by the test runner identifies a **browser project** —
+`chromium`, `firefox`, `webkit`, a device profile. It is unrelated to Execution
+Scope Identity and SHALL NEVER be used as one. The two SHALL NOT be conflated in
+any artifact, report, or contract.
+
+### Derivation
+
+The default scope identity is derived from the **normalized origin of the
+configured base URL**.
+
+Normalization is **consumed** through the public contract defined by
+`03_Discovery_Engine.md` §18 (URL Normalization Engine). This document defines
+**no normalizer**, and no component SHALL implement a second one.
+
+An explicit scope identity MAY be supplied through the configuration hierarchy
+(§29), in which case it takes precedence over the derived default.
+
+Derivation SHALL be deterministic: the same base URL SHALL always yield the same
+scope identity.
+
+### Backward Compatibility
+
+Where no scope identity is supplied and none can be derived, execution SHALL
+resolve to a **single implicit default scope**.
+
+Existing single-application behaviour is therefore unchanged: one implicit scope
+behaves exactly as no scope at all. Artifacts produced before this amendment
+remain valid and are read as belonging to the default scope.
+
+Absence of scope identity SHALL NEVER halt execution.
 
 ---
 

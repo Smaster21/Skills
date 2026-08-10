@@ -622,10 +622,67 @@ The Graph Builder SHALL:
 - Merge duplicate entities
 - Normalize names
 - Resolve references
-- Assign unique IDs
+- Assign unique IDs *(scope defined in §15.1)*
 - Build relationships
 - Calculate confidence
 - Produce graph metadata
+
+---
+
+## 15.1 Scope Of Identifier Assignment
+
+*"Assign unique IDs"* applies **only to entities this document derives from
+application discovery** — facts about the Application Under Test:
+
+- Pages
+- Routes
+- Components
+- Forms
+- APIs
+- Workflows
+- Roles and Permissions
+- Navigation elements, modals, and the remaining discovered entity types
+
+### Test Case Identifiers Are Not Assigned Here
+
+> **Test Case nodes reference identifiers minted by
+> `06_Test_Generation_Engine`. This document SHALL NOT mint, regenerate, or
+> independently assign Test Case IDs.**
+
+A Test Case is a **framework-generated artifact**, not an application fact. It
+exists only because `06` created it, and it comes into existence during
+`GENERATING` — four lifecycle states after this document is built at
+`BUILDING_GRAPH` (`01` §17). An identifier cannot be assigned here for an entity
+that does not yet exist.
+
+**Consumes Test Case Identity through the public contract defined by
+`06_Test_Generation_Engine.md` §22.1.**
+
+### What This Document Retains
+
+Nothing is removed. This document continues to:
+
+- Hold Test Case nodes in the graph
+- Hold coverage relationships such as `Test Case → covers → Checkout` and
+  `Test Case → validates → Login`
+- Answer coverage queries such as *"Find tests covering Checkout"* (§19)
+- Enforce referential integrity over those relationships (§22)
+
+Referencing an identifier is not owning it. This is the same relationship `11`
+already holds toward this document's own entity identifiers.
+
+| Concern | Owner |
+| ------- | ----- |
+| Test Case Identity | **06** §22.1 |
+| Test Catalogue | **06** |
+| Knowledge Graph representation of Test Cases | **04** (this document) |
+| Test Case coverage relationships | **04** (this document) |
+
+### Referential Integrity
+
+A Test Case node whose identifier has been **retired** by `06` (§31.1 Rule 2)
+remains a valid graph reference. Retirement is a catalogue condition, not a
+deletion, and SHALL NOT be treated as a dangling reference under §22.
 
 ---
 

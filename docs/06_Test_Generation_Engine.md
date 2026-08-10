@@ -1118,6 +1118,61 @@ the business objective.
 
 ---
 
+## 22.1 Test Case Identity
+
+### Ownership
+
+**This engine owns Test Case Identity.**
+
+Every Test Case has **exactly one canonical Test Case ID**, minted here.
+
+This engine is responsible for **minting**, **preserving**, and **retiring** Test
+Case IDs. No other component may mint one, and no competing identifier may stand
+in for one.
+
+Other components MAY reference a Test Case ID. Referencing confers no ownership.
+
+### The Test Catalogue
+
+The **Test Catalogue** is owned by this engine and is the **canonical identity
+layer** for Generated Tests.
+
+| Concern | What it is |
+| ------- | ---------- |
+| **Generated Tests** | The specification files this engine produces |
+| **Test Catalogue** | The identity layer over those files — which behaviour each ID denotes |
+
+Both belong to the `Generated Tests` canonical dataset already owned here. The
+catalogue is **not** a second dataset, and there SHALL NEVER be a second
+catalogue or a second identity system.
+
+### Identity Denotes Behaviour, Not Implementation
+
+A Test Case ID identifies **a behaviour**, not a file, a locator, a position, or
+an implementation.
+
+Two specifications that validate the same behaviour are the same Test Case and
+carry the same ID. One ID SHALL NEVER denote two behaviours.
+
+### Distinct From Knowledge Graph Entities
+
+A Test Case is a **framework-generated artifact**, not an application fact. Pages,
+routes, components, workflows and APIs exist whether or not anyone tests them; a
+Test Case exists only because this engine created it.
+
+| Concern | Owner |
+| ------- | ----- |
+| Test Case Identity | **06** (this engine) |
+| Test Catalogue | **06** (this engine) |
+| Knowledge Graph representation of Test Cases | 04 |
+| Test Case coverage relationships | 04 |
+
+`04` models Test Case nodes and relationships such as
+`Test Case → covers → Checkout` and `Test Case → validates → Login`, **referencing
+identifiers minted here**. `04` SHALL NOT mint them (`04` §15).
+
+---
+
 # 23. Metadata Generation
 
 Every generated file shall include metadata.
@@ -1595,6 +1650,159 @@ Improved maintainability
 
 ---
 
+## 31.1 Identity Preservation Across Regeneration
+
+Regeneration is the operation that threatens Test Case Identity. The five rules
+below are **mandatory** and are owned by this engine.
+
+### Rule 1 — Preserve
+
+A behaviour that survives regeneration **SHALL retain its existing Test Case ID**.
+
+```text
+Generation 1:  TC-0010 = Login
+Behaviour survives
+Generation 2:  TC-0010 = Login
+```
+
+The ID SHALL NOT change because the test was regenerated, the file changed, a
+locator changed, the test order changed, the implementation changed, or other
+tests were added or removed.
+
+### Rule 2 — Retire
+
+When a behaviour is removed, its Test Case ID becomes **retired**.
+
+```text
+TC-0010 = Old behaviour
+Behaviour removed
+TC-0010 = RETIRED
+```
+
+A retired ID remains in the catalogue and remains traceable to the behaviour it
+denoted. It SHALL NEVER be silently deleted from history.
+
+### Rule 3 — Never Reuse
+
+> **A retired Test Case ID SHALL NEVER be reused.**
+
+```text
+TC-0020 → RETIRED
+New behaviour → SHALL NOT receive TC-0020
+```
+
+This holds even when the number becomes numerically available. An identifier
+remains permanently bound to the behaviour it denoted.
+
+**This rule exists because it was violated.** Across two executions of one
+application, `TC-0020` denoted *"forgot-password link is reachable from the login
+page"* and then *"valid credentials establish a session and land on the
+dashboard."* Every record keyed on `TC-0020` silently de-referenced. Rule 3
+prevents recurrence.
+
+### Rule 4 — New Behaviours
+
+A genuinely new behaviour receives the **next unused Test Case ID**.
+
+**Unused** means never previously assigned — *including retired identifiers*.
+
+```text
+TC-0020 retired
+TC-0021 active
+New behaviour → TC-0022
+```
+
+Numeric gaps SHALL NEVER be filled. The catalogue is append-only in its
+identifier space.
+
+### Rule 5 — Catalogue / Specification Bijection
+
+Every **active** catalogue entry corresponds to exactly one generated
+specification, and every generated specification corresponds to exactly one
+catalogue entry.
+
+```text
+1 active catalogue ID  ↔  1 generated specification
+```
+
+The validation gate (`01` §18) SHALL detect:
+
+- duplicate catalogue IDs
+- duplicate specifications
+- a specification with no catalogue entry
+- an active catalogue entry with no specification
+- one ID denoting multiple behaviours
+- multiple IDs denoting one surviving behaviour
+
+Retired entries are exempt from bijection: they intentionally have no
+specification.
+
+---
+
+## 31.2 Identity Lifecycle
+
+```text
+New behaviour
+      ↓
+06 mints a new Test Case ID
+      ↓
+Specification generated
+      ↓
+Regeneration ── behaviour survives ──► same ID   (Rule 1)
+      │
+      └──────── behaviour removed ───► ID retired (Rule 2)
+                                            ↓
+                                   NEVER reused  (Rule 3)
+```
+
+**Retired** is a catalogue condition of an identifier. It is **not** a framework
+lifecycle state and introduces no state in `01` §17 and no phase in `01` §16.
+
+---
+
+## 31.3 Determinism
+
+Identity assignment SHALL be deterministic.
+
+Given the same prior catalogue, the same discovery delta, and the same identity
+history, regeneration SHALL produce the same catalogue.
+
+IDs SHALL NOT be random, timestamp-derived, or dependent on file order, worker
+order, or generation order.
+
+---
+
+## 31.4 Catalogue Version Is Not Identity
+
+```text
+Catalogue Version  ≠  Test Case Identity
+```
+
+A **Catalogue Version** identifies a snapshot of the catalogue. A **Test Case ID**
+identifies a behaviour *across* catalogue versions.
+
+```text
+Catalogue v1:  TC-0010 = Login
+Catalogue v2:  TC-0010 = Login        ← identity stable
+               TC-0011 = Logout       ← catalogue grew
+```
+
+The version changes as the catalogue evolves; the identity does not.
+
+---
+
+## 31.5 Historical Records
+
+Historical records SHALL NEVER be silently remapped.
+
+Where a historical record references an identifier whose meaning cannot be
+reliably established under these rules, the record SHALL be **retained and
+marked unmappable** — never deleted, and never assigned an invented mapping.
+
+A mapping that cannot be proven SHALL NOT be asserted (`01` §31).
+
+---
+
 # 32. Duplicate Detection
 
 The framework SHALL detect duplicated:
@@ -2017,6 +2225,10 @@ and historical analysis.
 
 ## Every Generated File Shall Include
 
+**Test Case ID**
+
+**Catalogue Version**
+
 Generation ID
 
 Execution ID
@@ -2038,6 +2250,37 @@ Timestamp
 Workflow ID
 
 Risk Level
+
+Test Case ID and Catalogue Version are **additive**. Every field previously
+required remains required and unchanged.
+
+Test Case ID is defined by §22.1 and preserved by §31.1. Catalogue Version
+identifies the catalogue snapshot the file was generated from (§31.4).
+
+---
+
+## Identity Traceability Chain
+
+The Test Case ID SHALL remain traceable end to end:
+
+```text
+Test Catalogue
+      ↓
+Generated specification
+      ↓
+Execution
+      ↓
+Result
+      ↓
+Report  ·  Learning records
+```
+
+Because the ID is stable across regeneration (§31.1 Rule 1) and never reused
+(Rule 3), a record keyed on it in `09` or `10` continues to denote the same
+behaviour for the life of that behaviour.
+
+This chain uses the existing traceability fields above. It creates **no new
+canonical dataset**.
 
 ---
 

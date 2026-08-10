@@ -56,6 +56,8 @@ justify skipping a lifecycle stage or quality gate defined in `01`.
 16. Reporting Integrity
 17. Manual Observation Mode
 18. Target Health Pre-Flight
+19. Evidence Quality Measurement
+20. Framework Confidence — Remaining §21 Term Measurement
 
 ---
 
@@ -1168,6 +1170,654 @@ target — a wrong expectation is still wrong.
 - Carry the verdict into the report, so a reader knows whether the numbers mean
   anything.
 - A run against an UNHEALTHY target SHALL NOT be used for reported totals.
+
+---
+
+# 19. Evidence Quality Measurement
+
+Implements the requirement already specified by `02_Decision_Engine.md` §18
+(*"Every evidence item receives its own confidence score"*) and §21, whose
+Confidence Formula weights `Evidence Quality × 0.35`.
+
+## Status Of This Section
+
+This section adds **no model**. `02` §21's Confidence Formula is the framework's
+single confidence model and is used **unchanged**.
+
+`02` specifies **what** Evidence Quality is — a per-item score, aggregated into
+the 0.35 term of its formula. `02` does not state **how** to compute it. That
+mechanical procedure is supplied here, and here only.
+
+| Concern | Owner |
+| ------- | ----- |
+| Evidence Quality — definition, weight, role in confidence | **02** §18, §21 |
+| Framework Confidence — the model and its output | **02** §21 |
+| Measurement procedure — the mechanical HOW | This section |
+
+`02` remains the sole owner. Nothing in this section may override, reweight, or
+substitute for `02` §21.
+
+Evidence Quality is **not** an engine-local score. It is an input term of `02`'s
+own model, so the Ownership Matrix rule requiring engine-local scores be *"named
+distinctly from confidence"* does not apply and no second score is created.
+
+---
+
+## Why This Section Exists
+
+`02` §18 has mandated per-item evidence confidence since Architecture v3.0.
+Across three executions — `qa-automationexercise`, `qa-orangehrm-20260803`,
+`qa-orangehrm-20260805` — it was measured **zero** times, and no Framework
+Confidence value was emitted in any run.
+
+A complete specification with no tactics entry produced no implementation three
+times. This section closes that gap.
+
+---
+
+## Per-Item Evidence Confidence
+
+Every Evidence Object defined by `02` §18 carries the fields
+`id · type · source · confidence · timestamp · payload`.
+
+The `confidence` field SHALL be populated by three mechanical checks over
+attributes `02` §18 already mandates. No attribute is invented.
+
+### Check 1 — Completeness
+
+Each of the six required fields is present and non-empty.
+
+```
+completeness = (populated required fields) / 6        → 0.0 … 1.0
+```
+
+### Check 2 — Directness
+
+Derived from the evidence category `02` §18 already defines:
+
+| `02` §18 category | Directness | Rationale |
+| ----------------- | ---------: | --------- |
+| **Dynamic** — current DOM, network latency, CPU, retry count, environment health | 1.00 | Measured this execution |
+| **Static** — routes, configuration, capabilities, browser matrix | 0.90 | Measured, but not re-observed under load |
+| **Historical** — flaky tests, past failures, locator evolution, healing success, execution trends | 0.75 | Inferred from prior executions; correct at the time observed |
+
+### Check 3 — Corroboration
+
+Count of **distinct `source` values** asserting the same fact:
+
+| Distinct sources | Multiplier |
+| ---------------: | ---------: |
+| 0 | 1.00 |
+| 1 | 1.00 |
+| 2 | 1.05 |
+| ≥ 3 | 1.10 |
+
+**Zero distinct sources yields 1.00, the same as one source.**
+
+Absence of corroboration is already represented through the completeness factor
+(Check 1), which counts an absent `source` field as unpopulated. Applying a
+second reduction here would penalise the same absence twice.
+
+The multiplier therefore rewards corroboration above a single source; it never
+penalises its absence.
+
+### Item Score
+
+```
+itemConfidence = round( 100 × completeness × directness × corroboration )
+clamped to 0 … 100
+```
+
+The clamp is required: corroboration may lift a complete, dynamic item above 100
+before clamping.
+
+---
+
+## Evidence Quality — The §21 Term
+
+`02` §21 lists **Evidence Quality** and **Evidence Quantity** as *separate*
+factors. Evidence Quality SHALL therefore be **quantity-neutral** — a mean, never
+a sum. A large pile of weak evidence must not present as high quality.
+
+```
+evidenceQuality = arithmetic mean of itemConfidence over the evidence SET
+```
+
+Aggregation is over the set, **not** a sequence. It SHALL be order-independent:
+identical evidence gathered in a different order SHALL produce an identical
+value. This matches the determinism discipline already required by `14` §16.
+
+The result is expressed on `02` §21's existing 0–100 scale. **No new scale is
+introduced.**
+
+---
+
+## Empty Or Insufficient Evidence
+
+Where the evidence set is empty, `evidenceQuality` is **undefined** — never
+zero, and never defaulted.
+
+Per `02` §5.5 Safe Failure, the decision SHALL be refused with
+`INSUFFICIENT_EVIDENCE` rather than computed with a substituted term.
+
+A defaulted 0.35 term would silently fabricate confidence. An undefined term
+makes the gap visible, which is the behaviour `01` §31 requires.
+
+---
+
+## Feeding Framework Confidence
+
+The measured value is supplied to `02` §21 as the `Evidence Quality` term of its
+existing formula:
+
+```
+Confidence = Evidence Quality        × 0.35
+           + Historical Reliability  × 0.25
+           + Rule Agreement          × 0.20
+           + Environment Stability   × 0.20
+```
+
+This formula SHALL NOT be altered, reweighted, or reimplemented here. The
+remaining three terms are supplied by `02` from its own sources.
+
+`02` emits the resulting Framework Confidence. It is the only value that may be
+reported as "confidence" (Ownership Matrix, *Confidence Ownership*).
+
+---
+
+## Persistence — No New Artifact
+
+| Value | Recorded in | Defined by |
+| ----- | ----------- | ---------- |
+| `itemConfidence` | the `confidence` field of the Evidence Object | `02` §18 |
+| `evidenceQuality` | the decision's evidence record | `02` §36 |
+| Framework Confidence | the decision audit record | `02` §39 |
+
+All three destinations already exist. **No dataset, file, or schema is created.**
+
+---
+
+## Determinism Requirements
+
+The measurement SHALL:
+
+- Contain no randomness
+- Contain no wall-clock dependence — `timestamp` is compared for ordering and
+  recency classification, never used as a magnitude
+- Aggregate order-independently
+- Produce an identical value for an identical evidence set
+- Round once, at the item level, using a single fixed rule
+
+Two executions with identical evidence SHALL produce identical `evidenceQuality`
+and identical Framework Confidence.
+
+---
+
+## Verification
+
+A future execution satisfies this section when:
+
+- Every Evidence Object carries a populated, non-default `confidence`
+- `evidenceQuality` appears in the decision's evidence record
+- Framework Confidence is emitted, and reproduces `02` §21's formula from its
+  four stated terms
+- Two runs over identical evidence produce identical values
+- An empty evidence set yields `INSUFFICIENT_EVIDENCE`, not a zero
+
+> **Demonstrated in RW0** (`EXEC-20260810-0001`, 2026-08-10, authorized OrangeHRM
+> target). Thirty-three Evidence Objects across six decision records each carried a
+> measured `confidence`; `evidenceQuality` was emitted on all six; the 0–100 clamp
+> fired on a three-source dynamic item; and every value recomputed identically from
+> its persisted inputs, including under reversed evidence order. The empty-evidence
+> decision path did not arise naturally and was not manufactured.
+
+---
+
+# 20. Framework Confidence — Remaining §21 Term Measurement
+
+## Status Of This Section
+
+This section adds **no model**. `02` §21's Confidence Formula remains the
+framework's single confidence model, used **unchanged**:
+
+```
+Confidence = Evidence Quality        × 0.35
+           + Historical Reliability  × 0.25
+           + Rule Agreement          × 0.20
+           + Environment Stability   × 0.20
+```
+
+The four weights are `02`'s and are **not** restated as adjustable here. They sum
+to 1.00. Nothing in this section may reweight, replace, duplicate, or relocate
+them, and `02` remains the sole Framework Confidence authority.
+
+§19 supplied the mechanical procedure for **one** of the four terms. `02` names
+the other three as factors and, exactly as it did for Evidence Quality, does not
+state **how** to compute them. This section supplies those three procedures, and
+here only.
+
+| Concern | Owner |
+| ------- | ----- |
+| The confidence model, its weights, its output | **02** §21 |
+| Term definitions and their role in confidence | **02** §18, §21 |
+| Evidence Quality measurement procedure | **§19** (this document) |
+| Remaining three measurement procedures | **§20** (this section) |
+
+None of the three is an engine-local score. Each is an **input term of `02`'s own
+model**, so the Ownership Matrix rule requiring engine-local scores be *"named
+distinctly from confidence"* does not apply, and no second score is created.
+
+---
+
+## Why This Section Exists
+
+RW0 (`EXEC-20260810-0001`) demonstrated the full runtime chain from an authorized
+target through Evidence Objects and per-item confidence to `evidenceQuality` and
+`02` §21's unchanged weights. **Framework Confidence was still not emitted**,
+because three of the four required terms had no approved measurement procedure.
+The runtime refused to produce a value rather than substitute one.
+
+> That refusal was correct behaviour, not an implementation failure. `02` §5.5 and
+> `01` §31 require an absent term to stay visible. A defaulted term would have
+> fabricated confidence — the precise failure §19 was written to prevent.
+
+This section closes the remaining gap so the model becomes computable without any
+value ever being guessed.
+
+---
+
+## Common Rules For All Three Terms
+
+These rules are identical to §19's and are restated, not redefined.
+
+**Scale.** Each term is expressed on `02` §21's existing 0–100 scale. **No new
+scale is introduced.**
+
+**Rounding.** Each term rounds **once**, at the term level, half-up, then clamps
+to 0–100. There is no second rounding anywhere.
+
+**Determinism.** No randomness. No hidden state. No undocumented heuristic.
+Aggregation is order-independent. Each term is independently recomputable from its
+declared persisted inputs.
+
+**Wall-clock rule.** A `timestamp` MAY be used for **ordering** and **recency
+classification**; it SHALL NEVER be used as a **magnitude**. A measured elapsed
+**duration** is an observation, not a clock reading, and may be used as a
+magnitude. This is §19's rule, unchanged.
+
+**Unavailability.** Each term has an explicit `UNAVAILABLE` state with a named
+reason. A term that is unavailable SHALL NOT be substituted with `0`, `50`, `100`,
+a configured default, a value inferred from an unrelated artifact, or silence.
+
+**Composite behaviour.** Framework Confidence is computed only when **all four**
+terms are available. Where any term is unavailable, `02` refuses the value and
+names every unavailable term, consistent with `02` §5.5. This is the behaviour RW0
+already exercised; it is unchanged.
+
+**Persistence.** All three term values are recorded in the **decision audit
+record** (`02` §39), which already mandates `Confidence` and `Rules evaluated`.
+**No dataset, file, or schema is created by this section.**
+
+**Producer.** `02` §21 computes all four terms. Other documents supply *inputs*
+through their existing read contracts. No engine produces a confidence-like score
+of its own, and no measurement is relocated outside the confidence owner.
+
+---
+
+## 20.1 Historical Reliability — The 0.25 Term
+
+### Definition
+
+The rate at which **prior executions of the same application** completed their
+lifecycle reliably.
+
+### What It Deliberately Does NOT Measure
+
+It does **not** measure how many tests passed.
+
+A test failure is a finding about the **target**, not about framework
+reliability. Scoring pass rate here would lower Framework Confidence precisely
+when the framework succeeds at finding real defects, which inverts the meaning of
+confidence. Reliability is therefore measured against the **execution lifecycle**,
+not against test outcomes.
+
+### Input Evidence
+
+| Input | Source | Owner |
+| ----- | ------ | ----- |
+| Prior execution records | `executions/` in the Learning Repository, `10` §13 | **10** |
+| Partition key | Execution Scope Identity | **01** §30.1 |
+| Snapshot semantics | Start-of-execution pinned snapshot, `10` §7.5 | **10** |
+| Terminal lifecycle state vocabulary | `01` §17 state machine | **01** |
+
+Canonical dataset: **Learning Database (`10`)**. Consumed through `10`'s existing
+read contract; this section defines no new record type.
+
+### Eligible Records
+
+A record is eligible when **all** of the following hold:
+
+- it belongs to the **current Execution Scope Identity** (`10` §7.2);
+- it is present in the **pinned snapshot** taken at execution start (`10` §7.5);
+- it is **not** the current execution;
+- its terminal lifecycle state is `COMPLETED` **or** `FAILED`.
+
+Excluded, with reasons:
+
+| Excluded | Reason |
+| -------- | ------ |
+| `CANCELLED` executions | Operator cancellation carries no reliability signal. Counting it as unreliable would penalise a deliberate stop. |
+| Foreign-scope records | `10` §7.2 — foreign-scope reads are *evidence*, never native history. They SHALL NOT contribute to this term. |
+| Records outside the pinned snapshot | `10` §7.5 — an execution SHALL NEVER read history it is concurrently writing. |
+
+### Reliable Outcome
+
+| Terminal state | Classification |
+| -------------- | -------------- |
+| `COMPLETED` | reliable |
+| `FAILED` | unreliable |
+
+### Recency Window And Decay
+
+Decay is **rank-based, never time-weighted**. Time-weighted decay would use a
+timestamp as a magnitude, which the Common Rules forbid.
+
+```
+order  = eligible records sorted by Start Time DESC,
+         ties broken by Execution ID DESC          → a total order
+window = the first W records of that order
+```
+
+`W` is the configured recency window, resolved through the configuration hierarchy
+owned by `01` §29. Older executions lose influence by **falling out of the
+window**, not by being multiplied by a decaying factor.
+
+The tie-break makes the order **total**, so the window is identical regardless of
+the order in which records were enumerated.
+
+### Calculation
+
+```
+reliable              = |{ r in window : terminalState(r) == COMPLETED }|
+historicalReliability = round( 100 × reliable / |window| )
+                        clamped to 0 … 100
+```
+
+### Minimum Sample
+
+`minimumExecutions`, resolved through `01` §29. This reuses the configuration
+semantics `14` §30 already established for *"insufficient history (below
+configured minimum executions)"*; it introduces no new threshold and no new
+configuration authority.
+
+### Empty Or Insufficient Input
+
+| Condition | Result |
+| --------- | ------ |
+| No store for this scope (cold start, `10` §7.3) | `UNAVAILABLE: NO_HISTORY` |
+| `|eligible|` = 0 | `UNAVAILABLE: NO_HISTORY` |
+| `0 < |eligible| < minimumExecutions` | `UNAVAILABLE: INSUFFICIENT_HISTORY` |
+
+A cold start is **not an error** (`10` §7.3) and SHALL NOT halt execution. It
+makes this term unavailable, which refuses Framework Confidence for that decision
+while the decision itself still proceeds on rules, policy and risk.
+
+### Range And Boundaries
+
+| Case | Value |
+| ---- | ----- |
+| Every windowed record `COMPLETED` | `100` |
+| No windowed record `COMPLETED` | `0` |
+| `|window|` = `minimumExecutions` exactly | measurable |
+| `|window|` = `minimumExecutions − 1` | `UNAVAILABLE: INSUFFICIENT_HISTORY` |
+
+### Determinism
+
+Deterministic and order-independent: inputs come from an immutable pinned
+snapshot, a total order fixes the window, and the aggregation is a ratio over a
+set. `Start Time` is used only for ordering — never as a magnitude.
+
+### Persistence
+
+Value → decision audit record (`02` §39). Inputs remain in `10`'s Learning
+Database. Owner: **02** §21.
+
+---
+
+## 20.2 Rule Agreement — The 0.20 Term
+
+### Definition
+
+The proportion of **applicable** rules evaluated for this decision whose `Action`
+is consistent with the **selected** candidate.
+
+### Input Evidence
+
+| Input | Source | Owner |
+| ----- | ------ | ----- |
+| Rules evaluated | `02` §39 audit record — already a mandated field | **02** |
+| Rule fields (`Rule ID`, `Action`, `Version`) | `02` §19 Rule Format | **02** |
+| Selected candidate | `02` §39 audit record, *Winning candidate* | **02** |
+
+Canonical dataset: **none new**. Every input is already required to be present in
+the same decision audit record that will hold the result. `02` §39 mandates
+*"Rules evaluated"*, so the observation exists today and no engine needs to begin
+recording anything new.
+
+### Applicability
+
+A rule is **applicable** when its `Condition` was evaluated for this decision and
+yielded a determinate outcome. Excluded from both numerator and denominator:
+
+| Excluded | Reason |
+| -------- | ------ |
+| Rule not evaluated | It expressed no position on this decision. |
+| `Condition` indeterminate | An indeterminate condition is not agreement. |
+| `Action` orthogonal to every candidate | The rule neither supports nor contradicts the selection. |
+
+Orthogonal exclusions SHALL be disclosed in the audit record, so a small
+denominator is visible rather than hidden.
+
+### Agreement And Disagreement
+
+| Relationship between rule `Action` and the selected candidate | Classification |
+| ------------------------------------------------------------- | -------------- |
+| The selected candidate **satisfies** the `Action` | agrees |
+| The selected candidate **contradicts** the `Action` | disagrees |
+| Neither | orthogonal — excluded |
+
+### Conflicting Rules
+
+A conflict between two rules is **not resolved here**. Both are counted: one
+agrees, one disagrees, and the value falls accordingly — which is the correct
+signal, since a conflicted rule set is genuinely weaker evidence. Conflict
+*resolution* remains `02`'s own capability and is never performed by this
+measurement.
+
+### `Confidence Modifier` Is Deliberately Unused
+
+`02` §19's Rule Format includes a `Confidence Modifier`. This measurement
+**SHALL NOT** read it. Doing so would give a rule a second, direct path into the
+confidence value, producing an unauditable blend of a measured term and a
+rule-authored adjustment. Rule agreement is measured from `Action` alone.
+
+### Calculation
+
+```
+denominator   = |agreeing| + |disagreeing|
+ruleAgreement = round( 100 × |agreeing| / denominator )
+                clamped to 0 … 100
+```
+
+### Empty Or Insufficient Input
+
+| Condition | Result |
+| --------- | ------ |
+| `denominator` = 0 (no applicable rules) | `UNAVAILABLE: NO_APPLICABLE_RULES` |
+| *Rules evaluated* absent from the audit record | `UNAVAILABLE: RULE_OUTCOMES_NOT_RECORDED` |
+
+**An empty rule set is not unanimous agreement.** "No rule objected" is the
+absence of evidence, not perfect evidence, and SHALL NOT yield `100`.
+
+### Range And Boundaries
+
+| Case | Value |
+| ---- | ----- |
+| All applicable rules agree | `100` |
+| All applicable rules disagree | `0` |
+| One applicable rule, agreeing | `100` — legitimate, and the small denominator is disclosed |
+| No applicable rules | `UNAVAILABLE: NO_APPLICABLE_RULES` |
+
+### Determinism
+
+Deterministic and order-independent: a count over a set, with no dependence on
+evaluation order. `Rule Version` is recorded per rule, so a recomputation resolves
+the same rule semantics that were evaluated.
+
+### Persistence
+
+Value → decision audit record (`02` §39), alongside the rule outcomes it was
+computed from. Owner: **02** §21.
+
+---
+
+## 20.3 Environment Stability — The 0.20 Term
+
+### Definition
+
+The degree to which the target environment behaved **nominally** during the
+pre-execution verification window.
+
+### Input Evidence
+
+| Input | Source | Owner |
+| ----- | ------ | ----- |
+| Environment verification (Health, Availability) | `07` §17, §31 Environment Manager | **07** |
+| Pre-flight probe series | §18 Target Health Pre-Flight | this document |
+| Discovery latency reference | measured during Phase 1, consumed by §18 | **03** |
+| Persistence of execution metrics | `07` §37, §39 | **07** |
+
+Canonical dataset: **Execution State (`07`)**, with the reported view carried into
+**Reports (`09`)** as §18 already requires. No dataset is created.
+
+Required observations, all already produced by §18:
+
+```
+totalProbes    errorProbes    medianMs    referenceMs
+```
+
+`errorProbes` counts probes returning a `5xx` status **or** failing to connect —
+§18's existing `UNHEALTHY` criteria, unchanged.
+
+### Window Semantics
+
+The **pre-execution verification window only**: the probe series taken in
+`globalSetup`, before any test runs.
+
+Continuous during-execution health (`07` §40) is deliberately **excluded**.
+Including it would let the outcome being scored feed back into the term that helps
+score it, which would make Framework Confidence depend on its own subject.
+
+### Stability And Instability Criteria
+
+Both anchors below are **pre-existing approved §18 values**, restated:
+
+| Criterion | Boundary | Source |
+| --------- | -------- | ------ |
+| Nominal | `medianMs` at the measured Discovery reference | §18 |
+| Degraded | `medianMs` ≥ 5 × `referenceMs` | §18 |
+| Unhealthy | any `5xx` or connection failure | §18 |
+
+### Calculation
+
+```
+availability  = (totalProbes − errorProbes) / totalProbes
+latencyRatio  = medianMs / referenceMs
+latencyFactor = clamp( (5 − latencyRatio) / (5 − 1), 0, 1 )
+
+environmentStability = round( 100 × availability × latencyFactor )
+                       clamped to 0 … 100
+```
+
+`latencyFactor` interpolates linearly between §18's two existing anchors: `1.00`
+at the measured reference latency, `0.00` at §18's `DEGRADED` threshold of 5×. A
+target faster than its reference clamps to `1.00` — faster than nominal is not
+better than nominal.
+
+> **The linear shape between those two anchors is the one genuinely new numeric
+> choice in this section.** It is declared here rather than buried: the anchors are
+> pre-approved, the interpolation between them is this decision's.
+
+### Transient Failures
+
+A single failing probe reduces `availability` proportionally. It is neither
+amplified into an automatic `UNAVAILABLE` nor ignored. A transient failure lowers
+the term; it does not erase it.
+
+### Empty Or Insufficient Input
+
+| Condition | Result |
+| --------- | ------ |
+| `totalProbes` = 0 | `UNAVAILABLE: NO_ENVIRONMENT_OBSERVATION` |
+| `referenceMs` absent or 0 | `UNAVAILABLE: NO_LATENCY_REFERENCE` |
+
+§18 already forbids substituting a guessed reference; a missing reference
+therefore makes this term unavailable rather than estimated.
+
+### Range And Boundaries
+
+| Case | Value |
+| ---- | ----- |
+| All probes non-error, `medianMs` ≤ `referenceMs` | `100` |
+| All probes error | `0` |
+| `medianMs` ≥ 5 × `referenceMs` | `0` |
+| `medianMs` = 3 × `referenceMs`, no errors | `round(100 × 1.00 × 0.50)` = `50` |
+| No probes | `UNAVAILABLE: NO_ENVIRONMENT_OBSERVATION` |
+
+### Determinism
+
+Deterministic and order-independent: a fixed probe count, a median over a set, and
+arithmetic on persisted measured values. Durations are measured **intervals**, not
+clock readings, so the wall-clock rule is satisfied.
+
+### Persistence
+
+Value → decision audit record (`02` §39). Source observations remain in `07`'s
+Execution State, reported through `09`. Owner: **02** §21.
+
+---
+
+## Stated Implementation Dependencies
+
+These are **declared, not resolved**, in keeping with this document's
+evidence-first rule. None blocks the specification; each must hold for the
+measurement to be exactly recomputable.
+
+| # | Dependency | Affects |
+| - | ---------- | ------- |
+| D-1 | The §18 probe series (`totalProbes`, `errorProbes`, `medianMs`, `referenceMs`) must be present in `07`'s persisted Execution State metrics (`07` §37, §39), not only in the §18 report view, for independent recomputation from a canonical dataset. | 20.3 |
+| D-2 | `10` §13 records *Overall Status* and illustrates it as `PASSED`. This section deliberately classifies against `01` §17's terminal lifecycle states (`COMPLETED`/`FAILED`/`CANCELLED`) because `01` is the higher authority and its vocabulary is enumerated. Implementations must record the terminal lifecycle state, not only an informal pass/fail label. | 20.1 |
+| D-3 | `W` (recency window) and `minimumExecutions` must be present in the configuration hierarchy (`01` §29). No default is asserted here, because asserting one would make an unmeasured choice look approved. | 20.1 |
+
+---
+
+## Verification
+
+A future execution satisfies this section when:
+
+- Each of the three terms is either **measured** by the procedure above or marked
+  `UNAVAILABLE` with its named reason — never defaulted;
+- Framework Confidence is emitted when all four terms are available, and refused
+  naming every unavailable term otherwise;
+- `02` §21's weights appear unchanged as `0.35 / 0.25 / 0.20 / 0.20`;
+- Each term recomputes identically from its persisted inputs, including under a
+  reversed enumeration order;
+- A cold-start scope yields `UNAVAILABLE: NO_HISTORY` rather than `0`;
+- An empty applicable-rule set yields `UNAVAILABLE: NO_APPLICABLE_RULES` rather
+  than `100`.
+
+> **Not yet demonstrated.** This section is an instruction. Runtime satisfaction
+> requires an actual execution and has not occurred. RW0 validated §19 only.
 
 ---
 
