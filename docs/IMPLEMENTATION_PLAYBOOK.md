@@ -1821,4 +1821,126 @@ A future execution satisfies this section when:
 
 ---
 
+# 21. Deep Discovery & API Capture Tactics (W7-C)
+
+Implements the **W7-C data foundation**: discover the application deeply once,
+capture its observed network/data surfaces safely, and produce evidence that maps
+into the **frozen W7-B AIC v1.0.0 contract** so downstream skills need not
+re-crawl. This section is **tactics (HOW)**; the AIC contract and its ownership by
+`04` are authoritative and unchanged. W7-C adds no engine, dataset, lifecycle
+state, identity authority, confidence model, or Evidence Quality model.
+
+## Status Of This Section
+
+Implemented and verified at **implementation tier** in a disposable, non-framework
+surface (`qa-w7c-impl-20260811/`, 55/55 tests) against a **fully-mocked local
+fixture** — no real target, no offensive testing. Runtime-tier satisfaction awaits
+the separately-authorized **W7-H** wave. QA remains defensive: discover / observe /
+capture / safe-validate only.
+
+## Scope Boundary (defensive)
+
+W7-C produces intelligence and functional evidence. It SHALL NOT exploit, and
+SHALL NEVER emit the reserved AIC states `OFFENSIVELY_VALIDATED` /
+`VULNERABILITY_CONFIRMED` (W7-B §A5). Those belong to the offensive/validator
+authorities that later *consume* the AIC.
+
+## Discovery Sources & Provenance
+
+Discover, within scope, from these sources; every record carries
+`provenance.discoverySource` (W7-B §A6): `crawl · js · sitemap · robots ·
+network · verification`.
+
+- **robots.txt** — fetch, record `RETRIEVED|NOT_FOUND|UNAVAILABLE`, parse
+  directives + sitemap refs. A `Disallow` is **intelligence, recorded
+  `DISCOVERED`** — never a bypass grant, never offensively tested (W7-B §B11).
+- **sitemap** — parse `<loc>` routes, `discoverySource=sitemap`, `DISCOVERED`.
+- **JavaScript routes** — extract path/API/GraphQL-like strings from JS already
+  loaded by the app; exclude asset paths; `discoverySource=js`, `DISCOVERED` — a
+  string in JS is **not** executable proof (W7-B §B12).
+- **network** — every XHR/fetch witnessed during normal navigation → `OBSERVED`.
+- **crawl** — pages/links/forms via BFS within caps.
+
+A hidden endpoint = discovered from `js|sitemap|robots` and **not** page-linked;
+record it with provenance, `DISCOVERED`, and never auto-exercise or auto-bypass.
+
+## State Semantics (W7-B §A5 — never collapse)
+
+`DISCOVERED → OBSERVED → EXERCISED → VALIDATED`. A witnessed call is `OBSERVED`;
+a test-driven call is `EXERCISED`. `exercised` is **derived** from state, never a
+stored boolean. `DISCOVERED`/`OBSERVED` ⇒ not exercised ⇒ not tested ⇒ not
+vulnerable.
+
+## URL Normalization, Route Templates, Scope & Caps
+
+Consume `03` §18 normalization (no second normalizer): lowercase scheme/host,
+default-port removal, tracking-param (`utm_*`, `fbclid`, `gclid`, …) removal,
+fragment removal, sorted keys, trailing-slash strip on the **pathname**. Collapse
+dynamic segments to a route template (`/users/{id}`) so many pages share one route
+id (W7-B §C1). Enforce scope against `SCOPE_FILE` (host list) or same-origin
+default **before any navigation**; out-of-scope targets are recorded, never
+contacted. Caps (`maxPages`, `maxDepth`, RPS) come from `01` §29 — **never
+hard-code a universal ceiling**; a missing cap is a disclosed config gap, never
+silently infinite. Every skipped/capped/inaccessible surface is disclosed.
+
+## API Capture — masking is the gate (W7-B §B15, `01` §30, `07` §41)
+
+For every observed call, build masked request + response evidence and an
+`api-call` record correlating **page · journey · test · execution · scope**
+(consumed identities: `01` §30, `01` §30.1, `06` §22.1 — never invented). Support
+REST/JSON, form-urlencoded, multipart, GraphQL, plain text, XML, HTML, binary.
+
+**Masking runs BEFORE any persistence, through one authority** (no second masking
+system):
+- Sensitive **names** (Authorization, bearer/api-key/session/cookie/csrf/
+  password/credential/`token`/access·refresh·id-token/PII incl. card, ssn,
+  email…) → `masked`.
+- Sensitive **value shapes** (Bearer…, JWT, `AKIA…`, `sk_live_…`, high-entropy) →
+  `masked` even under a bland name.
+- JSON/form bodies → `redacted` (structure/keys kept, sensitive values masked,
+  recursively).
+- **Binary** bodies → `binary` repr (contentType + size + sha256, **never raw**).
+- **Unknown sensitivity defaults to `masked`.** Reprs: `plain · masked ·
+  redacted · omitted · hashed · binary` (W7-B §B15).
+
+## Schema Observation
+
+Observe request/response schema from **real** payloads only (object fields+types,
+array element type, GraphQL indicators). Uncertainty → explicit W7-B absence
+(`NOT_OBSERVED`/`UNAVAILABLE`), **never a guessed schema**.
+
+## Explicit Absence (W7-B §C7)
+
+Never use bare `null/0/false/[]` for meaning. Use
+`EMPTY · UNAVAILABLE · NOT_PRODUCED · BLOCKED · NOT_EXERCISED · NOT_OBSERVED`.
+Fields owned by later waves (journeys result → W7-F; attack-surface projection →
+W7-E; full graph serialization → W7-D) are emitted as `NOT_PRODUCED`, never
+fabricated.
+
+## Determinism (W7-B §A10)
+
+Deterministic IDs (`sha256[0:16]` of canonical inputs), array ordering by id,
+timestamps/durations non-semantic. Identical observations → equivalent AIC.
+
+## Maps Into The AIC — W7-C Populates
+
+`target · pages · routes · apis · api-calls · forms · parameters ·
+auth-surfaces · robots · javascript-routes · relationships · evidence/`. It does
+**not** own `04`'s serialization (W7-D) or produce journeys (W7-F) or the
+attack-surface projection (W7-E) — those are `NOT_PRODUCED` here.
+
+## Verification
+
+Satisfied at implementation tier when: robots/sitemap/JS/hidden discovery carry
+provenance and `DISCOVERED`; network capture masks every sensitive category
+before persistence and never stores raw binary; calls correlate to
+page/journey/test/execution; state ladder stays distinct and reserved states are
+un-emittable by QA; absence is explicit; output is deterministic; and no raw
+secret appears anywhere in the serialized AIC. Runtime tier is **W7-H**.
+
+> **Implementation-tier demonstrated (W7-C).** Runtime satisfaction requires the
+> separately-authorized W7-H wave and has not occurred.
+
+---
+
 # End of IMPLEMENTATION_PLAYBOOK.md

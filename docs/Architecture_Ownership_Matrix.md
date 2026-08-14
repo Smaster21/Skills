@@ -135,6 +135,21 @@ each canonical dataset.
 | Discovery Delta                  | 13    |
 | Coverage Recommendations         | 14    |
 | Planning Review                  | 15    |
+| **Application Intelligence Contract** | **04** |
+
+Ratified by **W7-A**, Board decision **BD-W7-1**.
+The **Application Intelligence Contract (AIC)** is the versioned, immutable,
+cross-skill interoperability serialization of the canonical application
+intelligence owned by **04** — pages, routes, journeys, forms, parameters, APIs,
+API-calls, auth surfaces, hidden/observed endpoints, relationships, and a
+*derived* attack-surface routing projection, each evidence-linked and
+provenance-tagged. It is a serialization/contract of `04`'s model, **not** a
+second Knowledge Graph, a second discovery authority, a second intelligence
+model, an offensive finding store, a vulnerability database, a second Evidence
+Quality model, or a second Framework Confidence model. It carries no CVSS and no
+confirmed-vulnerability status. Its schema is defined by **W7-B**; the `04`
+model/node-edge extensions that populate it are defined by **W7-D**. `11` MAY
+cache or project it; `11`'s projection remains derived and never canonical.
 
 ---
 
