@@ -4,9 +4,17 @@
 
 **Document:** 05_Test_Planning_Engine.md
 
-**Version:** 3.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** Accessibility, Security and
+> Performance coverage dimensions and execution strategies removed; Visual marked
+> OPTIONAL — DISABLED BY DEFAULT. §27 Browser Planning Engine **retained** as the
+> planning owner with its supported set reduced to Chromium. §18 gains the ten
+> canonical QA categories and the Exploration Coverage dimension. §30 non-retry
+> categories reworded away from security vocabulary. No engine, dataset, or
+> ownership changed.
 
 **Depends On:**
 
@@ -812,19 +820,44 @@ Role Coverage
 
 Component Coverage
 
-Browser Coverage
-
 Environment Coverage
 
-Accessibility Coverage
-
-Security Coverage
-
-Performance Coverage
-
-Visual Coverage
+Visual Coverage *(OPTIONAL — DISABLED BY DEFAULT)*
 
 Regression Coverage
+
+Exploration Coverage
+
+---
+
+## Canonical QA Categories (W8)
+
+Coverage is planned across exactly these ten categories. The tactical definition
+of each is owned by `IMPLEMENTATION_PLAYBOOK` §5.
+
+| # | Category | Default |
+|---|---|---|
+| 1 | Smoke | on |
+| 2 | Functional — positive · boundary · business-rule · CRUD-except-Delete · state-transition | on |
+| 3 | UI | on |
+| 4 | Forms | on |
+| 5 | Authentication | on |
+| 6 | Navigation | on |
+| 7 | API | on |
+| 8 | Dashboard | **off** |
+| 9 | Table | **off** |
+| 10 | Visual | **off** |
+
+Accessibility, performance, responsive, cross-browser and security are **not**
+categories and SHALL NOT be planned (`01` §2).
+
+## Exploration Coverage
+
+Exploration Coverage measures reachable, in-scope surfaces explored within the
+configured budget. It SHALL NEVER be expressed as a claim that every page was
+explored. Every unreached surface carries exactly one recorded reason:
+`inaccessible · blocked · capped · excluded · unavailable state · unavailable
+credentials` (`01` §2.2).
 
 ---
 
@@ -1053,13 +1086,7 @@ Full
 
 API
 
-Security
-
-Accessibility
-
-Performance
-
-Visual
+Visual *(OPTIONAL — DISABLED BY DEFAULT)*
 
 Custom
 
@@ -1095,7 +1122,7 @@ All Critical Workflows
 
 ↓
 
-Chromium + Firefox
+Chromium
 
 ↓
 
@@ -1437,15 +1464,13 @@ required for execution.
 
 Chromium
 
-Firefox
-
-WebKit
-
-Microsoft Edge
-
-Google Chrome
-
-Mobile Emulation
+> **W8.** Cross-browser testing is not a qa-automation responsibility
+> (`01` §2, `16` §65). Firefox, WebKit, Microsoft Edge, Google Chrome and Mobile
+> Emulation were withdrawn from the supported set and SHALL NOT be planned.
+>
+> This engine is **retained** as the planning owner: the framework still decides
+> and records a browser matrix, and `07` remains the sole runtime authority. The
+> supported set is now a single entry.
 
 ---
 
@@ -1455,17 +1480,17 @@ Required browsers
 
 Execution order
 
-Parallel browsers
-
 Headless mode
 
 Headed mode
 
-Viewport configuration
-
-Device profiles
+Viewport configuration *(single default viewport — `16` §33)*
 
 Browser-specific retries
+
+A browser project SHALL NEVER be declared unless it is actually executed. A
+declared-but-unrun project misrepresents scope and is a reporting-integrity
+defect (`09`).
 
 ---
 
@@ -1474,8 +1499,6 @@ Browser-specific retries
 | Browser  | Mode     | Priority |
 | -------- | -------- | -------: |
 | Chromium | Headless | Critical |
-| Firefox  | Headless |     High |
-| WebKit   | Headless |   Medium |
 
 ---
 
@@ -1649,9 +1672,11 @@ Business logic failures
 
 Permission failures
 
-Security defects
-
 Application crashes
+
+A non-retryable failure is a **target defect, suite defect, or environment
+artifact** (`08` §16, `01` §23). It SHALL NEVER be reclassified as a security
+finding.
 
 ---
 

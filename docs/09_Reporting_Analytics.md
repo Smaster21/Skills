@@ -4,9 +4,17 @@
 
 **Document:** 09_Reporting_Analytics.md
 
-**Version:** 3.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** Performance, Accessibility and
+> Security report types, coverage dimensions and failure categories removed;
+> Visual marked OPTIONAL — DISABLED BY DEFAULT. §23 Performance Analytics
+> retitled to make clear it measures **framework execution**, not the target.
+> §32 Report Security is governance only and is unchanged. **Added:** the
+> mandatory Exploration Disclosure (§12A). Reporting integrity, gap disclosure
+> and determinism are unchanged.
 
 **Depends On:**
 
@@ -425,17 +433,46 @@ The framework supports:
 - Coverage Report
 - Failure Report
 - Risk Report
-- Performance Report
-- Accessibility Report
-- Security Report
-- Visual Testing Report
+- Visual Testing Report *(OPTIONAL — DISABLED BY DEFAULT)*
 - API Testing Report
+- Exploration Disclosure (§12A — **mandatory**)
 - Historical Trend Report
 - Executive Summary
 
 Each report type
 has its own schema
 and quality requirements.
+
+Performance, Accessibility and Security report types were **removed in W8**.
+This framework produces no security finding, no severity, no CVSS, and no
+security-skill recommendation (`01` §2.1).
+
+---
+
+# 12A. Exploration Disclosure (mandatory)
+
+Every run SHALL emit an exploration disclosure. It is not optional and SHALL NOT
+be omitted because it is empty — an empty disclosure is itself a statement.
+
+The disclosure SHALL state:
+
+- the configured exploration budget (`maxPages`, `maxDepth`, rate, depth caps)
+  and whether any cap was reached;
+- the exploration mode — **Authenticated** or **Unauthenticated** (`01` §2.3);
+- every discovered-but-not-reached surface, each with exactly one reason:
+  `inaccessible · blocked · capped · excluded · unavailable state ·
+  unavailable credentials`;
+- every surface revisited, with its recorded revisit reason
+  (`PLAYBOOK` §21);
+- which optional categories (Visual, Dashboard, Table) were enabled, and which
+  were not run.
+
+The report SHALL NEVER state or imply that every page was explored, and SHALL
+NEVER express exploration as a 100% figure. The guarantee is **all reachable,
+in-scope surfaces within the configured budget** (`01` §2.2).
+
+A surface that was not reached and carries no reason is a **defect in the run**,
+and the report SHALL say so rather than omitting the surface.
 
 ---
 
@@ -624,17 +661,13 @@ API Coverage
 
 Role Coverage
 
-Browser Coverage
-
 Environment Coverage
 
 Risk Coverage
 
-Accessibility Coverage
+Visual Coverage *(OPTIONAL — DISABLED BY DEFAULT)*
 
-Visual Coverage
-
-Performance Coverage
+Exploration Coverage (§12A)
 
 Example
 
@@ -674,7 +707,7 @@ Trend analysis includes:
 - Failure trend
 - Retry trend
 - Healing trend
-- Performance trend
+- Execution performance trend *(framework telemetry — §23)*
 - Coverage trend
 - Stability trend
 
@@ -724,11 +757,7 @@ Authentication
 
 Authorization
 
-Accessibility
-
-Performance
-
-Visual
+Environment
 
 Unknown
 
@@ -841,9 +870,14 @@ Promoted Locators
 
 ---
 
-# 23. Performance Analytics
+# 23. Execution Performance Analytics *(framework telemetry)*
 
-Execution performance is measured continuously.
+> **W8.** This section measures **the framework's own execution**, not the
+> target application. Performance testing of the target was removed
+> (`01` §2, `16` §63). Nothing here is judged against a performance budget, and
+> nothing here is reported as target performance coverage.
+
+Framework execution performance is measured continuously.
 
 Metrics include:
 
@@ -943,7 +977,8 @@ The dashboard shall display:
 - Business Risk
 - Flaky Tests
 - Healing Summary
-- Performance Summary
+- Execution Performance Summary *(framework telemetry)*
+- Exploration Disclosure Summary (§12A)
 - Top Failures
 - Recommendations
 
@@ -1163,6 +1198,9 @@ Subscribers may include:
 
 # 32. Report Security
 
+> **Governance only (W8 / C5).** Secret masking and evidence protection in
+> reports. This section performs no security assessment of the target.
+
 Reports shall never expose sensitive information.
 
 Sensitive information includes:
@@ -1251,7 +1289,7 @@ It provides:
 - Failure analysis
 - Coverage analytics
 - Trend analytics
-- Performance metrics
+- Framework execution telemetry
 - Risk insights
 - Historical comparisons
 - Secure archival

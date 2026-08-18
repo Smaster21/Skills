@@ -4,9 +4,16 @@
 
 **Document:** 07_Execution_Engine.md
 
-**Version:** 3.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** Supported browsers reduced to
+> Chromium; accessibility test worker examples replaced. §41 Execution Security
+> is **governance only** — masking, credential handling, evidence protection —
+> and is unchanged. Runtime authority, browser lifecycle, worker scheduling,
+> timeouts, retry, trace/screenshot/video capture and auth-state preservation are
+> **unchanged**.
 
 **Depends On:**
 
@@ -975,13 +982,10 @@ Collect Browser Metadata
 
 Chromium
 
-Firefox
-
-WebKit
-
-Microsoft Edge
-
-Google Chrome
+> **W8.** Firefox, WebKit, Microsoft Edge and Google Chrome were withdrawn.
+> Cross-browser testing is not a qa-automation responsibility (`01` §2,
+> `05` §27, `16` §65). A browser project SHALL NEVER be declared unless it is
+> actually executed.
 
 Mobile Emulation
 
@@ -1311,7 +1315,7 @@ Worker-3
 API Tests
 
 Worker-4
-Accessibility Tests
+Forms Tests
 ```
 
 ---
@@ -1360,15 +1364,10 @@ The Browser Manager shall:
 The framework shall support:
 
 - Chromium
-- Firefox
-- WebKit
 
-Future support:
-
-- Edge
-- Mobile Browsers
-- Cloud Browsers
-- Remote Browsers
+Firefox, WebKit and Edge were withdrawn in W8 (`01` §2). Mobile, cloud and
+remote browsers remain future capabilities (`01` §35), not current ones, and
+SHALL NOT be declared as projects.
 
 ---
 
@@ -1600,7 +1599,7 @@ Worker-3
 API Tests
 
 Worker-4
-Accessibility
+Navigation
 ```
 
 ---
@@ -2363,6 +2362,10 @@ until every mandatory quality gate passes.
 ---
 
 # 41. Execution Security
+
+> **Governance only (W8 / C5).** Secret masking, credential handling, scope
+> enforcement, Rules of Engagement enforcement and evidence protection. This
+> engine performs **no** security testing or security scanning of the target.
 
 ## Security Principles
 

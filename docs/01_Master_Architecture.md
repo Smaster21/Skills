@@ -4,7 +4,7 @@
 
 **Document:** 01_Master_Architecture.md
 
-**Architecture Version:** 4.0
+**Architecture Version:** 4.1
 
 **Status:** Draft
 
@@ -65,6 +65,7 @@ See §37 for the full governance contract.
 | 2.0     | Modular execution and self-healing improvements                      |
 | 3.0     | Enterprise AI Automation Architecture                                |
 | 4.0     | Expanded architecture: 15 engines, Ownership Matrix governance, Framework Cache Service, execution artifact separation, intelligence / review / optimization states |
+| 4.1     | **W8 — Site Explorer boundary.** Accessibility, performance, responsive, cross-browser and security testing removed from the QA capability surface (§2, §3.5, §7, §16, §27, §28, §29). The Security Engine (§5.2) is restated as governance-only. Cross-browser execution reduced to Chromium. Bounded exploration guarantee and the observation-only boundary added (§2). **No engine, lifecycle state, phase, identifier authority, confidence model, or Evidence Quality model was added, removed, or renumbered.** |
 
 ---
 
@@ -125,12 +126,8 @@ Primary goals:
 
 Secondary goals:
 
-- Accessibility validation.
-- Performance validation.
 - API validation.
-- Security validation.
-- Visual validation.
-- Cross-browser validation.
+- Visual validation. *(OPTIONAL — DISABLED BY DEFAULT; `16` §62)*
 
 Non-goals:
 
@@ -140,6 +137,58 @@ Non-goals:
 - Unsupported browser automation.
 - CAPTCHA bypass.
 - Authentication bypass.
+- **Security testing of any kind**, including passive security scanning.
+- **Security findings**, severity, or CVSS.
+- **Security-skill applicability, routing, or recommendation.**
+- **Vulnerability claims** about any observed surface.
+- Accessibility / WCAG compliance testing.
+- Performance testing.
+- Responsive-design testing.
+- Cross-browser testing.
+
+## 2.1 Observation Boundary
+
+The framework answers **"what exists in the application, and what evidence do we
+have?"** It SHALL NEVER answer "what security tests should be performed here?"
+
+Factual observations it MAY record: an input exists · a form exists · a route
+exists · an API endpoint exists · a JavaScript route was discovered · a GraphQL
+endpoint was discovered · an authentication surface exists · a parameter exists ·
+a request/response was observed.
+
+Conclusions it SHALL NEVER record, imply, or derive: that an attack class applies
+to a surface · that a surface is vulnerable · that a security skill should be run ·
+a probability or confidence that a surface is exploitable · an attack-surface
+classification or routing suggestion.
+
+A separately selected security skill reads this framework's evidence and
+determines its own assessment methodology. That interpretation happens outside
+this framework.
+
+## 2.2 Bounded Exploration Guarantee
+
+The framework SHALL NEVER claim that every page of an arbitrary application was
+explored, and SHALL NEVER state or imply a 100% figure. Its guarantee is:
+
+> **All reachable, in-scope surfaces discovered within the configured exploration
+> budget** — via browser navigation, discovered links and routes, sitemap,
+> robots, JavaScript routes, network/API observation, forms and interaction
+> discovery, and the supplied authenticated session where present.
+
+Every discovered-but-not-reached surface SHALL carry exactly one recorded reason:
+`inaccessible · blocked · capped · excluded · unavailable state · unavailable
+credentials`. An unreached surface with no recorded reason is a defect.
+
+## 2.3 Exploration Modes
+
+| Mode | Credentials / session | Explores |
+|---|---|---|
+| **Unauthenticated Exploration** | none supplied | publicly reachable in-scope surfaces |
+| **Authenticated Exploration** | supplied | additionally, authenticated surfaces reachable by that account |
+
+Authentication mode is **not** authorization. Scope and Rules of Engagement are
+mandatory in **both** modes (§30). Absence of credentials narrows scope; it never
+stops a run and never authorizes a bypass.
 
 ---
 
@@ -205,11 +254,13 @@ Examples include:
 - Delete actions
 - Bulk updates
 - Database reset
-- Active security scanning
 - Load testing
 - Data mutation
 
 Default behavior is observational.
+
+Active security scanning was **removed in W8**. It is not gated behind opt-in —
+the capability does not exist in this framework (§2).
 
 ---
 
@@ -350,7 +401,10 @@ These are **not** engines and own no lifecycle phase:
 4. Validation Engine (§18)
 5. Artifact Manager (§22)
 6. Diagnostics Engine (§23)
-7. Security Engine
+7. Security Engine — **governance controls only** (§30): secret masking,
+   credential handling, scope enforcement, Rules of Engagement enforcement, and
+   evidence protection. It SHALL NEVER perform security testing, security
+   scanning, or security assessment of the target (W8 / C5).
 8. Framework Cache Service (§39 — platform service owned by 11)
 
 ## 5.3 Backward Compatibility
@@ -442,12 +496,14 @@ Examples:
 
 - Playwright
 - API Testing
-- Accessibility
-- Performance
-- Security
-- Visual Testing
-- Mobile Emulation
-- Multi-Browser
+- Visual Testing *(OPTIONAL — DISABLED BY DEFAULT)*
+- Dashboard Testing *(OPTIONAL — DISABLED BY DEFAULT)*
+- Table Testing *(OPTIONAL — DISABLED BY DEFAULT)*
+
+**Withdrawn in W8** — recorded here so the removal is auditable rather than
+silent, and SHALL NOT be re-registered: `Accessibility` · `Performance` ·
+`Security` · `Multi-Browser` · `Mobile Emulation`. A withdrawn capability is not
+`DEGRADED` or `UNAVAILABLE`; it is absent from the capability surface (§2).
 
 Each capability includes:
 
@@ -1124,7 +1180,7 @@ State-dependent tests execute sequentially.
 
 Flaky tests are isolated.
 
-Security tests are opt-in unless configured.
+Security tests are never generated (§2, `06` §12).
 
 ---
 
@@ -1371,12 +1427,12 @@ Supported modes:
 - Regression
 - Sanity
 - Full
-- Security
-- Accessibility
-- Performance
-- Visual
 - API
+- Visual *(OPTIONAL — DISABLED BY DEFAULT)*
 - Custom
+
+The `Security`, `Accessibility` and `Performance` modes were **removed in W8**
+and SHALL NOT be reintroduced (§2).
 
 Each mode may define:
 
@@ -1598,13 +1654,15 @@ Backend defects
 
 Business logic defects
 
-Security vulnerabilities
-
 Authorization failures
 
 Application crashes
 
 Data corruption
+
+Healing SHALL NEVER be used to make a failing target behaviour appear to pass.
+A failure that is not locator drift is a **target defect, suite defect, or
+environment artifact** — never a security finding (§23, `08` §16).
 
 ---
 
@@ -1827,8 +1885,6 @@ Permission failures
 
 Application exceptions
 
-Security defects
-
 ---
 
 # 22. Artifact Manager
@@ -1931,9 +1987,7 @@ Assertion
 
 Browser
 
-Accessibility
-
-Performance
+Environment
 
 Unknown
 
@@ -2197,18 +2251,6 @@ SummaryGenerated
 
 ---
 
-Security Events
-
-PassiveScanStarted
-
-PassiveScanCompleted
-
-ActiveScanStarted
-
-SecurityFindingCreated
-
----
-
 Learning Events
 
 LearningUpdated
@@ -2244,12 +2286,6 @@ Generation Plugin
 Execution Plugin
 
 Reporting Plugin
-
-Security Plugin
-
-Performance Plugin
-
-Accessibility Plugin
 
 Notification Plugin
 
@@ -2351,15 +2387,13 @@ Execution
 
 Discovery
 
+Exploration (budget, caps, depth, rate, revisit policy — §2.2)
+
 Retry
 
 Reporting
 
-Security
-
-Accessibility
-
-Performance
+Governance (masking, credential handling, scope, Rules of Engagement — §30)
 
 Parallelism
 
@@ -2499,8 +2533,8 @@ application are recognisable as such.
 ### Not Playwright's Project ID
 
 `projectId` as emitted by the test runner identifies a **browser project** —
-`chromium`, `firefox`, `webkit`, a device profile. It is unrelated to Execution
-Scope Identity and SHALL NEVER be used as one. The two SHALL NOT be conflated in
+for this framework, `chromium`. It is unrelated to Execution Scope Identity and
+SHALL NEVER be used as one. The two SHALL NOT be conflated in
 any artifact, report, or contract.
 
 ### Derivation
@@ -2595,9 +2629,7 @@ Flaky Tests
 
 Failures
 
-Performance
-
-Security Findings
+Execution Performance *(framework telemetry — never a target performance test)*
 
 ---
 

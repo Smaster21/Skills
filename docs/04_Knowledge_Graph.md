@@ -4,9 +4,19 @@
 
 **Document:** 04_Knowledge_Graph.md
 
-**Version:** 3.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** §13 "Security model" renamed
+> "Access control model" and §27 "Security Headers" renamed "Response headers"
+> so neither reads as a security-observation capability. §27 remains **governance
+> only** — masking, access control, audit, sanitized AI copies. The
+> `Accessibility Tree` relationship-evidence value is **retained unchanged**
+> (C7): it is locator and self-healing evidence, not accessibility testing.
+> The AIC remains owned by this document; `attackSurface` is permanently
+> `NOT_PRODUCED` by qa-automation (C1, `PLAYBOOK` §21). No node type, edge type,
+> dataset, or ownership was added or removed.
 
 **Depends On:**
 
@@ -404,7 +414,7 @@ Subsequent sections define:
 - Persistence
 - Change detection
 - Graph analytics
-- Security model
+- Access control model
 - Governance
 
 # ------------------------------------------------------------------
@@ -1315,6 +1325,11 @@ KnowledgeGraphPersisted.
 
 # 27. Knowledge Graph Security
 
+> **Governance only (W8 / C5).** This section covers secret masking, credential
+> handling, access control, audit logging and evidence protection for the graph
+> itself. It performs **no** security testing or security assessment of the
+> target.
+
 ## Purpose
 
 The Knowledge Graph may contain
@@ -1334,7 +1349,7 @@ Internal APIs
 
 Admin Pages
 
-Security Headers
+Response headers
 
 Tokens
 

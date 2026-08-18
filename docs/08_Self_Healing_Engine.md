@@ -4,9 +4,19 @@
 
 **Document:** 08_Self_Healing_Engine.md
 
-**Version:** 3.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** Wording only. Two prohibition
+> lists were reworded away from security vocabulary; the prohibitions themselves
+> are unchanged and remain in force.
+>
+> **The Healing Candidate Score is unchanged** — DOM Similarity 0.30 ·
+> Historical Success 0.25 · **Accessibility Match 0.20** · Knowledge Graph Match
+> 0.15 · … Accessibility semantics (ARIA, role, label, accessible name) are
+> retained framework-wide as locator and self-healing evidence (C7,
+> `03` §7, `06` §26). Removing accessibility *testing* did not remove them.
 
 **Depends On:**
 
@@ -88,7 +98,7 @@ The engine SHALL NOT:
 - Bypass authentication
 - Alter business rules
 - Hide backend defects
-- Suppress security issues
+- Suppress, mask, or heal away any real target defect
 
 ---
 
@@ -485,13 +495,17 @@ The framework SHALL reject healing for:
 - API failures
 - Authentication failures
 - Authorization failures
-- Security vulnerabilities
 - Data corruption
 - Business logic defects
 - Missing application functionality
 
 These failures shall be reported,
 not healed.
+
+A rejected-for-healing failure is classified through the existing authority
+(§16, `01` §23) as a **target defect, suite defect, or environment artifact**.
+It SHALL NEVER be reclassified, escalated, or reported as a security finding or
+a vulnerability (`01` §2.1).
 
 ---
 

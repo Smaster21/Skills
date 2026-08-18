@@ -2,8 +2,8 @@
 
 > Executor reference. How this skill maps onto the coordination system's
 > `$OUTPUT_DIR` discipline, which environment variables it reads, and the
-> mandatory scope check. QA is **defensive** — it writes a QA phase directory,
-> not `findings/finding-NNN/`.
+> mandatory scope check. This skill is the **Site Explorer** backend — it writes
+> a QA phase directory, never `findings/finding-NNN/`.
 
 ## Phase directory — write into `$OUTPUT_DIR/qa/`, never the root
 
@@ -21,9 +21,19 @@ $OUTPUT_DIR/
     ├── decision-history/      decision-000N.json  (evidence + Evidence Quality + Framework Confidence)
     ├── execution-history/     execution-*.json, deviation-record.json
     ├── reports/               results.json, results.xml, html/, diagnostics.json,
-    │                          analytics.json, target-health.json, rw-report.md
+    │                          analytics.json, target-health.json,
+    │                          exploration-disclosure.json, rw-report.md
+    ├── aic/                   AIC serialization (04, PLAYBOOK §21):
+    │                          pages, routes, apis, api-calls, forms, parameters,
+    │                          auth-surfaces, robots, javascript-routes,
+    │                          relationships, manifest
+    │   └── evidence/          requests/, responses/ (masked), screenshots/
     └── raw/                   traces, screenshots, videos (retain-on-failure)
 ```
+
+`aic/attack-surface` is **permanently `NOT_PRODUCED`**. This skill emits no
+attack-surface projection, no `candidateAttackClass`, and no `suggestedSkill`
+(Ownership Matrix, W8 / C1).
 
 Discipline (per `coordination/reference/output-discipline.md`):
 
@@ -36,13 +46,33 @@ Discipline (per `coordination/reference/output-discipline.md`):
 
 ### Why not `findings/finding-NNN/`
 
-That layout is for **attack skills** producing exploit findings with a PoC and
-CVSS. QA produces functional results, accessibility results, and Tier-1 passive
-security **observations** — verified in `qa/decision-history/` and reported in
-`qa/reports/`. A functional failure is triaged as a **target defect**, a **suite
-defect**, or an **environment artifact** (never as an exploit finding). If the
-coordinator specifically wants a genuine security *finding* promoted into the
-findings tree, that is a separate attack-skill responsibility, not this skill's.
+That layout is for **security skills** producing findings with a PoC and CVSS.
+This skill produces **exploration evidence and QA results** — recorded in
+`qa/aic/`, verified in `qa/decision-history/`, and reported in `qa/reports/`. A
+functional failure is triaged as a **target defect**, a **suite defect**, or an
+**environment artifact** — never as a finding, and never assigned a severity.
+
+### The architectural boundary
+
+```
+qa-automation (Site Explorer)              selected security skill
+──────────────────────────────             ───────────────────────────────────
+Discovery                                  User selects the security skill
+  → Application understanding                → RedOps mounts it
+  → QA test planning                         → It reads Site Explorer evidence
+  → QA test generation                       → It determines its own targets
+  → Playwright execution                     → It determines its own methodology
+  → QA results                               → Security execution
+  → Evidence / reports                       → Security evidence → validation
+                                             → Finding
+
+"What exists in the application,           "Given the explicitly selected
+ and what evidence do we have?"              methodology, what security tests
+                                             should be performed, and how?"
+```
+
+This skill never crosses that line. It emits no security applicability tag, no
+routing suggestion, no probability, no recommendation, and no finding.
 
 ## Environment contract — non-interactive
 
@@ -55,8 +85,13 @@ Reads context from environment variables only; no prompt ever blocks a run.
 | `TARGET` / `TARGET_DOMAIN` | ✅* | Accepted as `BASE_URL` fallback (coordinator spelling) |
 | `SCOPE_FILE` | ⛒ | If present, every target validated against it before navigation |
 | `ROE_FILE` | ⛒ | If present, honor time-based restrictions / blackout / expiry |
-| `TEST_USER` / `TEST_PASS` | ❌ | Enable authenticated surface; absence narrows scope, never stops |
+| `TEST_USER` / `TEST_PASS` | ❌ | Present → **Authenticated Exploration**; absent → **Unauthenticated Exploration**. Absence narrows scope, never stops a run |
+| `ALLOW_WRITE_TESTS` | ❌ | `1` permits state-mutating QA tests: synthetic data, mandatory cleanup, scope + RoE, disclosed mutation (W7-A BD-W7-3). **Never** enables application-delete tests |
 | `CI` | ❌ | Fewer workers, more retries |
+
+**Authentication mode is not authorization.** `SCOPE_FILE` / `ROE_FILE`
+validation below is mandatory in **both** exploration modes. Removed in W8:
+`SECURITY_SCAN`, `ZAP_API_KEY` — this skill performs no security scanning.
 
 \* At least one of `BASE_URL` / `TARGET` / `TARGET_DOMAIN` must resolve to a URL.
 
@@ -91,3 +126,7 @@ substitute a target.
   connection on exit.
 - Deterministic output for identical input: no unseeded randomness, no
   wall-clock value used as a magnitude (`01` §3.1, `PLAYBOOK` §19 determinism).
+- Deterministic surface identity (`sha256[0:16]` of canonical inputs); a surface
+  is revisited only with a recorded reason (`PLAYBOOK` §21).
+- Masking runs **before** any persistence, through one authority. No raw secret
+  reaches a log, report, screenshot, trace, or artifact (`01` §30, `07` §41).

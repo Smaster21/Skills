@@ -1,3 +1,90 @@
+<!-- ============================================================================
+     W8 SUPERSESSION ERRATA — prepended 2026-08-17.
+     Everything BELOW the preservation marker is unchanged, byte for byte.
+     This block is the only addition to this file.
+     ============================================================================ -->
+
+# W8 SUPERSESSION ERRATA
+
+> **Read this before the preserved body below.** The body is the W6 execution
+> entry point, retained verbatim as historical reference. Parts of it were
+> superseded by the **W8 Site Explorer boundary** update. Where this errata and
+> the preserved body disagree, **this errata wins** — and the current owning
+> document wins over both.
+
+## What this skill is now
+
+The backend methodology for the **RedOps Site Explorer**:
+
+```
+URL → scope/authorization validation → browser-based exploration
+    → application understanding → evidence/provenance collection
+    → QA test planning → QA test generation → Playwright validation
+    → Playwright execution → retry/diagnostics/self-healing
+    → Site Explorer result
+```
+
+Security assessment is **not** part of this skill. A separately selected
+Skillmatrix security skill reads this skill's evidence and determines its own
+methodology.
+
+## Superseded statements in the preserved body
+
+| Location | Preserved text | Superseded by |
+|---|---|---|
+| Frontmatter `description` (line ~10) | Advertises "accessibility via axe-core, visual, responsive, cross-browser, Lighthouse performance, tiered security via ZAP passive proxy + OWASP Top 10 mapping" | **All of it removed in W8.** The current description is in `SKILL.md`. No axe-core, no Lighthouse, no ZAP, no OWASP mapping, no responsive or cross-browser matrices |
+| §1 Document Registry — `IMPLEMENTATION_PLAYBOOK` row | "…retry mechanics, **ZAP tiers**, hard-won rules…" | `PLAYBOOK` §9 (ZAP tiers), §10 (OWASP mapping) and §11 (performance budgets) are **REMOVED — W8**. `PLAYBOOK` §5 is now the ten QA categories; §21 owns deep discovery, API capture, bounded exploration, dedup and exploration modes |
+| §0 Framework Identity — "plans … and a **browser matrix**" | Implies a multi-browser matrix | **Chromium only** (`01` §2, `05` §27, `07`, `16` §32) |
+| §6 Failure Handling / §8 — "security vulnerabilities", "…auth, **security**, data corruption → real defects" | Treats security defects as a QA failure class | A failure is a **target defect, suite defect, or environment artifact** (`08` §16, `01` §23). It is NEVER a security finding and never earns a severity or CVSS |
+| **§8 Non-Goals** — "Security validation is a **secondary, opt-in** goal — passive by default. Active security scanning requires explicit authorization and a dedicated test environment (Playbook §9)" | Security validation is opt-in | **Superseded.** Security testing is **not a qa-automation responsibility at any tier**. It is not gated, opt-in, or configurable — the capability does not exist (`01` §2). `SECURITY_SCAN` and `ZAP_API_KEY` no longer exist |
+
+## Added invariants (not in the preserved body)
+
+These are now in force and belong with §7 Invariants / §9 Governance:
+
+1. **No security interpretation.** Record factual observations only — an input
+   exists, a form exists, a route exists, an API endpoint exists, a JavaScript
+   or GraphQL route was discovered, an authentication surface exists, a
+   parameter exists, a request/response was observed. NEVER conclude that an
+   attack class applies, that a surface is vulnerable, that a security skill
+   should be run, or that any of it is probable. NEVER emit a severity, CVSS,
+   finding, applicability tag, routing suggestion, or filtered security test
+   plan.
+2. **Reserved states are never emitted.** The ladder is
+   `DISCOVERED → OBSERVED → EXERCISED → VALIDATED`. `OFFENSIVELY_VALIDATED` and
+   `VULNERABILITY_CONFIRMED` belong to the downstream security skill and
+   validator, and are un-emittable here.
+3. **Bounded exploration.** Never claim 100% or "every page". The guarantee is
+   *all reachable, in-scope surfaces within the configured exploration budget*.
+   Every discovered-but-not-reached surface carries exactly one reason:
+   `inaccessible · blocked · capped · excluded · unavailable state ·
+   unavailable credentials` (`01` §2.2, `09` §12A).
+4. **Deterministic identity, no re-crawl.** A surface is revisited only for a
+   recorded reason — distinct state, distinct authentication context, workflow
+   transition, validation, or explicitly authorized re-discovery
+   (`PLAYBOOK` §21).
+5. **Exploration mode is not authorization.** **Authenticated Exploration**
+   (credentials supplied) and **Unauthenticated Exploration** (none) both
+   require approved scope and RoE (`01` §2.3, `01` §30).
+6. **Ten QA categories only** — smoke · functional · UI · forms ·
+   authentication · navigation · API, plus dashboard / table / visual
+   **OPTIONAL — DISABLED BY DEFAULT**. Functional covers positive · boundary ·
+   business-rule · **CRUD except Delete** · state-transition. Delete affordances
+   are discovered, never exercised (`PLAYBOOK` §5, `16` §44).
+7. **`attackSurface` is permanently `NOT_PRODUCED`.** Wave W7-E is not
+   authorized for qa-automation (Ownership Matrix, W8 / C1).
+
+## Still fully in force in the preserved body
+
+The 21-state machine · the 16 phases · §3 ownership resolution · §5 phase
+dispatch · **§5A Evidence → Evidence Quality → Framework Confidence** (`02` §21
+sole authority, weights unchanged) · §5B artifact ownership and identity ·
+§7 invariants · §7A validation tiers · §9 authorization-first, artifact
+preservation, ownership preservation, "introduce nothing new", and the
+`NOT DEMONSTRATED` / `BLOCKED` / `NOT PRODUCED` reporting vocabulary.
+
+---
+
 <!-- PRESERVED VERBATIM. This is the standalone execution entry point as it stood at
      the completion of W6 (SKILL.md sha256 ab2f8330...015065). During tool integration
      the top-level SKILL.md was restructured into a communitytools-compliant ROUTER.

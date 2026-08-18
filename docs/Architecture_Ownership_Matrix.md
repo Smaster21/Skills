@@ -3,9 +3,16 @@
 
 **Document:** Architecture_Ownership_Matrix.md
 
-**Version:** 4.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** The AIC description below is
+> amended to strike the derived attack-surface routing projection from what
+> qa-automation produces (C1, Option B). **No ownership row, canonical dataset,
+> cache region, decision authority, coverage/risk/confidence ownership,
+> scheduling layer, or AI-authority rule was added, removed, or reassigned.**
+> The W7-A / W7-B ratification records remain intact as history.
 
 **Purpose**
 
@@ -141,15 +148,53 @@ Ratified by **W7-A**, Board decision **BD-W7-1**.
 The **Application Intelligence Contract (AIC)** is the versioned, immutable,
 cross-skill interoperability serialization of the canonical application
 intelligence owned by **04** — pages, routes, journeys, forms, parameters, APIs,
-API-calls, auth surfaces, hidden/observed endpoints, relationships, and a
-*derived* attack-surface routing projection, each evidence-linked and
-provenance-tagged. It is a serialization/contract of `04`'s model, **not** a
-second Knowledge Graph, a second discovery authority, a second intelligence
-model, an offensive finding store, a vulnerability database, a second Evidence
-Quality model, or a second Framework Confidence model. It carries no CVSS and no
-confirmed-vulnerability status. Its schema is defined by **W7-B**; the `04`
-model/node-edge extensions that populate it are defined by **W7-D**. `11` MAY
-cache or project it; `11`'s projection remains derived and never canonical.
+API-calls, auth surfaces, hidden/observed endpoints and relationships, each
+evidence-linked and provenance-tagged. It is a serialization/contract of `04`'s
+model, **not** a second Knowledge Graph, a second discovery authority, a second
+intelligence model, an offensive finding store, a vulnerability database, a
+second Evidence Quality model, or a second Framework Confidence model. It
+carries no CVSS and no confirmed-vulnerability status. Its schema is defined by
+**W7-B**; the `04` model/node-edge extensions that populate it are defined by
+**W7-D**. `11` MAY cache or project it; `11`'s projection remains derived and
+never canonical.
+
+## Attack-Surface Routing Projection — Not Produced (W8 / C1)
+
+The derived **attack-surface routing projection** is struck from what
+qa-automation produces. The `attackSurface` collection remains a key in the
+frozen W7-B v1.0.0 shape and the W7-A ratification record (BD-W7-2, BD-W7-5)
+remains intact as history, but this skill emits it **permanently as
+`NOT_PRODUCED`** — in this run and in every future run. Wave **W7-E** is not
+authorized for qa-automation.
+
+Accordingly, this framework has **no owner** for, and SHALL NEVER produce:
+
+| Construct | Status |
+|---|---|
+| Skill Applicability Tagging | does not exist |
+| Security Test Catalogue | does not exist |
+| Filtered Security Test Plan | does not exist |
+| Attack-class / `candidateAttackClass` tagging | `NOT_PRODUCED` |
+| `suggestedSkill` routing | `NOT_PRODUCED` |
+| Security probability / vulnerability confidence | does not exist |
+| Security recommendation | does not exist (`15` — removed) |
+| Severity / CVSS / finding | does not exist |
+
+**The boundary.** Discovery evidence is factual; security interpretation belongs
+to the separately selected security skill.
+
+```
+qa-automation (Site Explorer)          selected security skill
+─────────────────────────────          ───────────────────────────────
+"What exists in the application,       "Given the explicitly selected
+ and what evidence do we have?"          security methodology, what
+                                         security tests should be
+                                         performed, and how?"
+```
+
+The security skill reads Site Explorer evidence, determines its own testing
+targets and methodology, executes, and produces its own findings. None of that
+happens here, and this document assigns none of it an owner inside `01`–`16`.
 
 ---
 

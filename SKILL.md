@@ -1,15 +1,30 @@
 ---
 name: qa-automation
-description: Autonomous web-app QA — discover, plan, generate, run Playwright tests
+description: Site Explorer backend — explore a web app, plan, generate, run Playwright tests
 ---
 
 # QA Automation
 
-Autonomous, evidence-driven QA engineering for web applications. Given an
-authorized URL it understands the app, plans and generates a Playwright +
-TypeScript suite from verified locators, executes it, diagnoses failures,
-records every decision with measured confidence, and reports honestly what was
-and was not covered.
+**The backend methodology for the RedOps Site Explorer.** Given an authorized,
+in-scope URL it explores the application, builds an evidence-backed
+understanding of what exists, plans and generates a Playwright + TypeScript QA
+suite from verified locators, executes it, diagnoses failures, records every
+decision with measured confidence, and reports honestly what was and was not
+covered.
+
+```
+URL → scope/authorization validation → browser-based exploration
+    → application understanding → evidence/provenance collection
+    → QA test planning → QA test generation → Playwright validation
+    → Playwright execution → retry/diagnostics/self-healing
+    → Site Explorer result
+```
+
+**Security assessment is not part of this skill.** It answers *"what exists in
+the application, and what evidence do we have?"* — never *"what security tests
+should be performed here?"* A separately selected Skillmatrix security skill
+reads this skill's evidence and determines its own methodology (§Rules 11–14,
+`docs/01` §2.1).
 
 > **This `SKILL.md` is a ROUTER.** It tells the coordinator *when to mount this
 > skill and which reference file to hand an executor*. It is not the operational
@@ -23,20 +38,54 @@ and was not covered.
 - **Problem solved:** turns an authorized web application into a running,
   self-healing, production-grade automated test suite with traceable evidence —
   without a human hand-writing locators, plans, or assertions.
-- **Engagement phase:** **QA / verification** — functional, forms, auth,
-  navigation, accessibility (axe-core), and **Tier-1 passive** security
-  observation (headers, cookie flags, OWASP mapping). It is a **defensive** skill,
-  not an exploitation skill.
-- **Target type:** web applications (any framework), public surface and, when
-  credentials are supplied, authenticated surface.
-- **When the coordinator invokes it:** "verify / regression-test / build an E2E
-  or Playwright suite for an in-scope web app", or as a defensive counterpart
-  after recon has mapped a web surface. Mount for verification work — **not** to
-  produce exploit findings.
+- **Engagement phase:** **exploration / QA verification** — smoke, functional,
+  UI, forms, authentication, navigation and API, plus optional dashboard, table
+  and visual. It is an **observational** skill: it discovers and verifies, it
+  never assesses security.
+- **Target type:** web applications (any framework), in **Unauthenticated
+  Exploration** or, when credentials are supplied, **Authenticated Exploration**.
+  Scope and authorization are mandatory in both modes.
+- **When the coordinator invokes it:** "explore / map / verify / regression-test
+  / build an E2E or Playwright suite for an in-scope web app", or to produce the
+  evidence base a later security skill will consume. Mount for exploration and
+  verification — **never** to produce security findings or to decide which
+  security skill applies.
 
-**Not** a Playwright script generator, a Selenium wrapper, or a raw
-HTML-to-test converter. A run that emits scripts without discovery, decisions,
-measured evidence, and disclosed scope has not done the job.
+**Not** a Playwright script generator, a Selenium wrapper, a raw HTML-to-test
+converter, a security scanner, or a security-skill recommender. A run that emits
+scripts without discovery, decisions, measured evidence, and disclosed scope has
+not done the job.
+
+## Exploration guarantee
+
+Never claim that every page of an arbitrary site was explored, and never state a
+100% figure. The guarantee is **all reachable, in-scope surfaces discovered
+within the configured exploration budget** — via browser navigation, discovered
+links and routes, sitemap, robots, JavaScript routes, GraphQL indicators,
+network/API observation, forms and interaction discovery, and the supplied
+authenticated session where present.
+
+Every discovered-but-not-reached surface carries exactly one recorded reason:
+`inaccessible · blocked · capped · excluded · unavailable state · unavailable
+credentials` (`docs/01` §2.2, `09` §12A).
+
+## QA test categories
+
+| # | Category | Default | # | Category | Default |
+|---|---|---|---|---|---|
+| 1 | Smoke | on | 6 | Navigation | on |
+| 2 | Functional | on | 7 | API | on |
+| 3 | UI | on | 8 | Dashboard | **off** |
+| 4 | Forms | on | 9 | Table | **off** |
+| 5 | Authentication | on | 10 | Visual | **off** |
+
+Functional covers positive · boundary · business-rule · **CRUD except Delete** ·
+state-transition. Delete affordances are discovered, never exercised; a test
+still cleans up its **own** synthetic data (`PLAYBOOK` §5–§6, `16` §44).
+
+**Not generated:** accessibility/WCAG · performance · responsive · cross-browser
+· any security test (SQLi, XSS, SSRF, IDOR, command injection) · security
+findings · severity/CVSS · security-skill applicability or recommendation.
 
 ---
 
@@ -50,7 +99,7 @@ Read the owning document before entering a phase.
 |---|---|---|---|
 | 0 | CONFIGURING | Config · `01` §29 | Resolve config, assign Execution + Correlation ID, health pre-flight (`PLAYBOOK` §18) |
 | 0A | DETECTING_CHANGES *(opt)* | `13` | Skip → full discovery if no prior snapshot |
-| 1 | DISCOVERING | `03` | Crawl, observe runtime, classify components — observational only |
+| 1 | DISCOVERING | `03` | Crawl + robots, sitemap, JS routes, GraphQL, hidden endpoints, route templates, forms, params, auth surfaces, network/API capture; deterministic dedup, masking before persistence — observational only (`PLAYBOOK` §21) |
 | 2 | BUILDING_GRAPH | `04` | Canonical application model; invalid graph never persisted |
 | 2A | INTELLIGENCE *(opt)* | `11` | Skip → consume `04` directly |
 | 3 | Locator Verification | `03` §29 → `06` §26 | Probe every candidate; no unverified locator reaches generation |
@@ -98,9 +147,15 @@ parentheses). Full mapping and env contract: `reference/output-and-scope.md`.
 | `qa/execution-history/` | execution history, deviation record | `07` §39 |
 | `qa/reports/` | HTML / JSON / JUnit, diagnostics, `rw-report.md` | `09` |
 | `qa/raw/` | traces, screenshots, videos | `07` |
+| `qa/aic/` | AIC serialization: `pages · routes · apis · api-calls · forms · parameters · auth-surfaces · robots · javascript-routes · relationships` | `04` (`PLAYBOOK` §21) |
+| `qa/aic/evidence/` | masked request/response capture, screenshot sidecars | `04` / `07` §41 |
 
-Reports MUST disclose skipped scope, degraded engines, and unexecuted work. A
-capped, single-browser, or credential-limited run is NEVER presented as complete.
+Reports MUST disclose skipped scope, degraded engines, and unexecuted work, and
+MUST include the mandatory **Exploration Disclosure** (`09` §12A). A capped or
+credential-limited run is NEVER presented as complete.
+
+`qa/aic/attack-surface` is permanently **`NOT_PRODUCED`** — this skill emits no
+attack-surface projection, ever (Ownership Matrix, W8 / C1).
 
 ---
 
@@ -108,23 +163,35 @@ capped, single-browser, or credential-limited run is NEVER presented as complete
 
 - `node` (≥20), `npm`, `npx playwright`
 - `chromium` (Playwright-managed build; **no** `install-deps`, **no** `sudo`)
-- `axe-core` (accessibility)
 - `jq` (JSON handling in reference playbooks)
-- *Optional:* OWASP `zap` daemon — Tier-2 passive proxy only; absent → Tier-1
-  passive observation still runs
 
-**Installation:** `npm i -D @playwright/test axe-core typescript` then
+**Installation:** `npm i -D @playwright/test typescript @types/node` then
 `npx playwright install chromium` (Chromium only). Standard Kali otherwise.
+
+No accessibility, performance, or security tooling — `axe-core`, Lighthouse and
+ZAP were removed in W8 along with the capabilities that used them.
 
 ---
 
 ## Related Skills
 
-- `/reconnaissance` — run first; its surface map seeds discovery targets
+**Upstream**
+
+- `/reconnaissance` — run first; its surface map seeds exploration targets
 - `/techstack-identification` — fingerprint the app before planning coverage
-- `/api-security` — pair for API surfaces discovered during the crawl
-- `/authentication` — when login/session testing is in scope
-- `/regression-sweep` — downstream: re-validate this suite's results on a schedule
+
+**Downstream — consumers of this skill's evidence, not QA activities**
+
+`/api-security` · `/authentication` · `/client-side` · `/server-side` ·
+`/injection` · `/web-app-logic`
+
+A security skill is selected **by the user**, mounted by RedOps, and reads the
+Site Explorer evidence to determine its own testing targets and methodology.
+This skill SHALL NEVER select, suggest, rank, or score one of them.
+
+**Also downstream**
+
+- `/regression-sweep` — re-validate this suite's results on a schedule
 
 ---
 
@@ -146,8 +213,8 @@ capped, single-browser, or credential-limited run is NEVER presented as complete
    model.
 6. **Unavailable is a state, not a number.** Never substitute `0`, `50`, `100`,
    a default, a previous value, or an inference for an unavailable measurement.
-7. **Chromium-only unless the browser matrix authorizes more.** A
-   declared-but-unrun browser project misrepresents scope.
+7. **Chromium only.** Cross-browser testing is not this skill's responsibility.
+   A declared-but-unrun browser project misrepresents scope.
 8. **Report honestly.** Reconcile every number against the runner's output;
    separate target defects from suite defects from environment artifacts; never
    present a partial run as complete.
@@ -155,6 +222,27 @@ capped, single-browser, or credential-limited run is NEVER presented as complete
    evidence — never modify, overwrite, or append to it.
 10. **Non-interactive.** All context via env vars; sensible defaults; clean up
     processes and temp files on exit; deterministic output for identical input.
+11. **No security interpretation.** Record factual observations only — an input
+    exists, a form exists, a route exists, an API endpoint exists, a JavaScript
+    or GraphQL route was discovered, an authentication surface exists, a
+    parameter exists, a request/response was observed. NEVER conclude that an
+    attack class applies, that a surface is vulnerable, that a security skill
+    should be run, or that any of it is probable. NEVER produce a severity, a
+    CVSS score, a finding, or a filtered security test plan.
+12. **Reserved states are never emitted.** The lifecycle ladder is
+    `DISCOVERED → OBSERVED → EXERCISED → VALIDATED`. This skill SHALL NEVER emit
+    `OFFENSIVELY_VALIDATED` or `VULNERABILITY_CONFIRMED` — they belong to the
+    security skill and validator downstream. A failed QA test is a target
+    defect, suite defect, or environment artifact — never a security finding.
+13. **Bounded exploration.** Never claim 100% or "every page". Every
+    discovered-but-not-reached surface carries exactly one recorded reason.
+14. **Deterministic identity, no re-crawl.** Every page/route/API/action has a
+    deterministic identity. A surface is revisited only for a recorded reason —
+    distinct state, distinct authentication context, workflow transition,
+    validation, or explicitly authorized re-discovery.
+15. **Authentication mode is not authorization.** Both **Authenticated** and
+    **Unauthenticated Exploration** require approved scope and RoE. Absence of
+    credentials narrows scope; it never stops a run and never permits a bypass.
 
 ---
 
@@ -176,8 +264,21 @@ two `reference/` files to an executor via `SKILL_FILES`; it never passes this
 - `docs/` — the 18-document authoritative specification (`01`–`16`, Ownership
   Matrix, `IMPLEMENTATION_PLAYBOOK`). Authority for every routing note above.
 
-**Not applicable to this skill** (attack-finding constructs; QA is defensive):
+**Not applicable to this skill.** Attack-finding constructs:
 `reference/scenarios/` exploit recipes · `PATT` payload URLs ·
 `findings/finding-NNN/` + CVSS · the skeptic/validator finding-verification loop.
-QA produces functional results and Tier-1 passive observations, not exploit
-findings; its evidence lives in `qa/decision-history/` and `qa/reports/`.
+
+Removed in **W8** and not to be reintroduced: accessibility/WCAG testing ·
+performance testing · responsive testing · cross-browser testing · security
+testing · passive security scanning · offensive testing · CVSS/severity/finding
+generation · Skill Applicability Tagging · security-skill recommendation ·
+security probability or confidence · any Test Catalogue used as a recommendation
+or decision engine.
+
+The **Test Catalogue is retained** (`06` §22.1, §31) as the internal test-identity
+and execution/audit record — test ID, category, target, execution status,
+evidence reference, failure info, retry info, timestamp. It records facts, never
+applicability.
+
+This skill produces exploration evidence and QA results, which live in
+`qa/aic/`, `qa/decision-history/` and `qa/reports/`.

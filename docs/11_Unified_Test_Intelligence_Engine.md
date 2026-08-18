@@ -5,9 +5,17 @@
 
 **Document:** 11_Unified_Test_Intelligence_Engine.md
 
-**Version:** 4.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** The Accessibility, Performance,
+> Security and Visual analysis dimensions are removed throughout; the engine
+> unifies **Functional · Component · Workflow · API · Runtime** analysis. The
+> engine itself, its optional/skippable status, its two owned capabilities
+> (Unified Intelligence Projection, Framework Cache Service) and its region
+> tenancy are **unchanged**. It produces no security interpretation of any kind
+> (`01` §2.1).
 
 **Depends On:**
 
@@ -60,9 +68,8 @@ a single comprehensive analysis of an application and producing a unified
 engineering understanding that can be reused by every downstream testing
 capability.
 
-Instead of allowing Functional Testing, Accessibility Testing,
-Performance Testing, API Testing, Security Testing, Visual Testing,
-and AI Planning to independently analyze the same application,
+Instead of allowing Functional analysis, Component analysis, Workflow analysis,
+API analysis and AI Planning to independently analyze the same application,
 the Unified Test Intelligence Engine performs analysis once and
 shares the resulting intelligence across the framework.
 
@@ -119,23 +126,15 @@ Discovery
 
 ↓
 
-Accessibility Scan
-
-↓
-
-Performance Scan
-
-↓
-
-Security Scan
-
-↓
-
 Functional Scan
 
 ↓
 
-Visual Scan
+Component Scan
+
+↓
+
+Workflow Scan
 
 ↓
 
@@ -168,10 +167,7 @@ The engine SHALL build a unified engineering model for:
 - UI components
 - Business workflows
 - API interactions
-- Accessibility
-- Performance characteristics
-- Security observations
-- Visual structure
+- Semantic and role metadata (locator/self-healing evidence — C7)
 - Runtime behavior
 - Application technologies
 
@@ -346,19 +342,7 @@ API Dependencies
 
 ↓
 
-Security Observations
-
-↓
-
-Accessibility Metadata
-
-↓
-
-Performance Characteristics
-
-↓
-
-Visual Structure
+Semantic & Role Metadata
 
 ↓
 
@@ -413,10 +397,7 @@ The package includes:
 - Component Intelligence
 - Workflow Intelligence
 - API Intelligence
-- Security Intelligence
-- Accessibility Intelligence
-- Performance Intelligence
-- Visual Intelligence
+- Runtime Intelligence
 - AI Planning Metadata
 
 This package is a **derived projection**, not a knowledge source of record.
@@ -506,14 +487,6 @@ Component Intelligence
 Workflow Intelligence
 
 API Intelligence
-
-Accessibility Intelligence
-
-Security Intelligence
-
-Performance Intelligence
-
-Visual Intelligence
 
 Runtime Intelligence
 
@@ -615,10 +588,9 @@ and deterministic execution.
 Functional   Component      Workflow        API
 Analyzer     Analyzer       Analyzer        Analyzer
 
- ┌──────────────┬──────────────┬──────────────┬──────────────┐
- ▼              ▼              ▼              ▼
-Security     Accessibility  Performance     Visual
-Analyzer     Analyzer       Analyzer        Analyzer
+                           │
+                           ▼
+                     Runtime Analyzer
 
                            │
                            ▼
@@ -664,10 +636,7 @@ Coordinate
 - Component Analysis
 - Workflow Analysis
 - API Analysis
-- Security Analysis
-- Accessibility Analysis
-- Performance Analysis
-- Visual Analysis
+- Runtime Analysis
 
 Track
 
@@ -839,7 +808,7 @@ without the Service acquiring knowledge of any consumer's domain.
 
 | Region | Semantic Owner | Content |
 | ------ | -------------- | ------- |
-| `intelligence` | **11** (this engine) | Page, component, workflow, API, visual analysis projections |
+| `intelligence` | **11** (this engine) | Page, component, workflow, API, runtime analysis projections |
 | `discovery` | **13** | Discovery snapshots, fingerprints |
 | `planning` | **05** | Coverage reuse |
 | `runtime-prediction` | **12** | Historical runtime data |
@@ -1271,9 +1240,9 @@ Dependencies
 
 Authentication
 
-Security Metadata
+Observed request/response metadata (masked — `PLAYBOOK` §21)
 
-Performance Metrics
+Observed timing (factual, never budgeted)
 
 Business Mapping
 
@@ -1673,8 +1642,7 @@ projection is an optimization; its absence SHALL NEVER block execution.
 
 This engine performs application analysis once and reprojects the Knowledge
 Graph into a reuse-optimized package, eliminating duplicated analysis across
-functional, component, workflow, API, accessibility, performance, security, and
-visual concerns.
+functional, component, workflow, API and runtime concerns.
 
 It owns exactly two capabilities: the **Unified Intelligence Projection** and
 **Cache Management**.

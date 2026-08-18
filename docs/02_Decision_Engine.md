@@ -4,11 +4,20 @@
 
 **Document:** 02_Decision_Engine.md
 
-**Version:** 3.0
+**Version:** 4.1
 
 **Status:** Draft
 
 **Depends On:** 01_Master_Architecture.md
+
+---
+
+# Revision History
+
+| Version | Description |
+| ------- | ----------- |
+| 3.0     | Enterprise decision engine: decision pipeline, evidence (§18), Framework Confidence (§21), rules, audit (§39) |
+| 4.1     | **W8 — Site Explorer boundary.** Decision questions, rule categories, permitted actions and examples referencing accessibility, performance and security testing removed. `02` §18 Evidence Objects, §21 Framework Confidence and its fixed weights, §36 evidence records and §39 audit records are **unchanged**. |
 
 ---
 
@@ -129,11 +138,9 @@ Which workflow has highest priority?
 
 Which browser should execute first?
 
-Should accessibility testing execute?
+Should an optional category (Visual, Dashboard, Table) execute?
 
-Should performance testing execute?
-
-Should security testing execute?
+Should a discovered surface be revisited, and for which recorded reason?
 
 Every decision must produce evidence.
 
@@ -341,9 +348,8 @@ Should page object be generated?
 
 Should API tests exist?
 
-Should accessibility tests exist?
-
-Should visual baseline be captured?
+Should a visual baseline be captured? *(only when the optional Visual category
+is explicitly enabled — `16` §62; never captured by default)*
 
 ---
 
@@ -640,10 +646,6 @@ Modify Page Objects
 Capture screenshots
 
 Generate reports
-
-Run Lighthouse
-
-Run ZAP
 
 Interact with browsers
 
@@ -1099,7 +1101,9 @@ Planning Rules
 
 Execution Rules
 
-Security Rules
+Exploration Rules
+
+Governance Rules
 
 Risk Rules
 
@@ -1175,11 +1179,9 @@ Reporting
 
 Learning
 
-Security
+Exploration
 
-Accessibility
-
-Performance
+Governance
 
 Plugins
 
@@ -2006,11 +2008,9 @@ Reporting
 
 Learning
 
-Security
+Exploration
 
-Accessibility
-
-Performance
+Governance
 
 Configuration
 
@@ -2056,7 +2056,7 @@ Informational
 
 Example
 
-Delete Test Data
+Clean Up Own Synthetic Test Data
 
 Critical
 
@@ -2064,7 +2064,7 @@ Retry Click
 
 Low
 
-Skip Security Scan
+Skip Optional Category
 
 High
 

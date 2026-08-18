@@ -4,9 +4,18 @@
 
 **Document:** 06_Test_Generation_Engine.md
 
-**Version:** 3.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** Accessibility, Performance and
+> Security test outputs, templates, assertion types and plugin types removed;
+> Visual marked OPTIONAL — DISABLED BY DEFAULT. §12 Non-Goals extended with an
+> explicit prohibition on generating security tests and application-delete tests.
+> §22.1 and §31.1–§31.5 **Test Case Identity and the Test Catalogue are retained
+> unchanged**, with an added clause confirming the Catalogue records execution
+> facts only and never applicability, probability, or a recommended skill.
+> §26 Locator Resolution and its priority order are **unchanged** (C7).
 
 **Depends On:**
 
@@ -78,10 +87,7 @@ The Test Generation Engine is responsible for generating:
 - Test Data Models
 - Assertions
 - API Tests
-- Accessibility Tests
-- Visual Tests
-- Performance Test Stubs
-- Security Test Stubs
+- Visual Tests *(OPTIONAL — DISABLED BY DEFAULT)*
 - Shared Components
 - Configuration Files
 - Project Structure
@@ -463,6 +469,30 @@ Manage execution scheduling
 
 Generate fake test results
 
+---
+
+## Prohibited Generation (W8)
+
+The Generation Engine SHALL NEVER generate:
+
+- **Any security test** — SQL injection, XSS, SSRF, IDOR, command injection,
+  path traversal, CSRF exploitation, authentication bypass, privilege
+  escalation, or any other exploitation attempt.
+- **Attack-shaped input payloads** in any category, including Forms. Malformed
+  input for boundary and validation testing uses the canonical data set
+  (`PLAYBOOK` §6), never attack strings.
+- **Application-delete tests.** Delete affordances are discovered and recorded,
+  never exercised (`16` §44, C9). Cleanup of a test's *own* synthetic data is a
+  separate obligation and is not a Delete test.
+- **Accessibility / WCAG compliance tests**, performance tests, responsive
+  viewport matrices, or cross-browser matrices.
+- **Any artifact that asserts, implies, or scores that a surface is vulnerable**,
+  that an attack class applies to it, or that a security skill should be run
+  against it (`01` §2.1).
+
+A separately selected security skill reads this framework's evidence and
+determines its own methodology. That generation happens outside this engine.
+
 All execution responsibilities belong to the
 Execution Engine.
 
@@ -798,13 +828,7 @@ Utilities
 
 API Tests
 
-Accessibility Tests
-
-Visual Tests
-
-Performance Tests
-
-Security Tests
+Visual Tests *(OPTIONAL — DISABLED BY DEFAULT)*
 
 Configuration Files
 
@@ -1167,6 +1191,27 @@ Test Case exists only because this engine created it.
 | Knowledge Graph representation of Test Cases | 04 |
 | Test Case coverage relationships | 04 |
 
+### The Catalogue Is A Factual Record, Never A Recommendation (W8)
+
+The Test Catalogue is an **internal identity and execution/audit record**. It
+MAY record:
+
+test ID · category · test case · target · execution status · evidence reference ·
+failure information · retry information · timestamp / execution identity
+
+It SHALL NEVER record, imply, or derive:
+
+- "SQL injection applicable" / "XSS probably applicable" or any attack-class tag
+- a probability, likelihood, or confidence that a surface is vulnerable
+- a recommended, suggested, or applicable security skill
+- a filtered security test plan
+- a severity, CVSS score, or finding
+
+There is **no** Skill Applicability Tagging layer and **no** Security Test
+Catalogue in this framework. Security interpretation belongs to the separately
+selected security skill (`01` §2.1,
+`Architecture_Ownership_Matrix.md`).
+
 `04` models Test Case nodes and relationships such as
 `Test Case → covers → Checkout` and `Test Case → validates → Login`, **referencing
 identifiers minted here**. `04` SHALL NOT mint them (`04` §15).
@@ -1263,7 +1308,9 @@ The Assertion Generation Engine shall:
 - Validate UI state
 - Validate application state
 - Validate API responses (where applicable)
-- Validate accessibility attributes
+- Validate semantic attributes — role, label, accessible name — as **functional
+  UI assertions** (C7). This is not a WCAG compliance check and SHALL NOT be
+  reported as accessibility coverage.
 - Validate navigation outcomes
 - Validate persisted data
 - Generate negative assertions when required
@@ -1281,7 +1328,7 @@ Supported assertion categories include:
 - Navigation
 - Form Validation
 - API Response
-- Accessibility
+- Semantic Attribute *(role / label / accessible name — functional, not WCAG)*
 - Storage
 - Download
 - Upload
@@ -2006,10 +2053,7 @@ Generation plugins may include:
 - Assertion Plugins
 - Locator Strategy Plugins
 - API Generation Plugins
-- Accessibility Plugins
-- Visual Testing Plugins
-- Performance Plugins
-- Security Plugins
+- Visual Testing Plugins *(OPTIONAL — DISABLED BY DEFAULT)*
 - AI Generation Plugins
 - Framework Adapter Plugins
 - Reporting Plugins
@@ -2162,6 +2206,11 @@ Execution SHALL NOT begin.
 ---
 
 # 39. Security & Governance
+
+> **Governance only (W8 / C5).** Secret masking, credential handling, scope
+> enforcement, Rules of Engagement enforcement and evidence protection. This
+> section governs the **safety of the generated code**; it does not authorize
+> security testing of the target (§12).
 
 ## Purpose
 

@@ -5,9 +5,15 @@
 
 **Document:** 13_Incremental_Discovery_Engine.md
 
-**Version:** 4.0
+**Version:** 4.1
 
 **Status:** Draft
+
+> **Revision 4.1 — W8, Site Explorer boundary.** Whole-application wording
+> replaced with the bounded exploration guarantee (`01` §2.2); the `Visual`
+> change category marked OPTIONAL — DISABLED BY DEFAULT. Snapshots,
+> fingerprinting, deltas, deduplication and the no-re-crawl foundation are
+> **unchanged** — they are the mechanism the guarantee relies on.
 
 **Depends On:**
 
@@ -273,9 +279,14 @@ Only changed entities may be replaced.
 The engine shall always prefer
 the smallest valid discovery scope.
 
+Re-discovery of an already-identified surface requires a recorded reason
+(`PLAYBOOK` §21): distinct state · distinct authentication context · workflow
+transition · validation · explicitly authorized re-discovery. A revisit without a
+recorded reason is a defect.
+
 Example:
 
-Entire Application ❌
+All Previously Explored Surfaces ❌
 
 Single Workflow ✅
 
@@ -291,8 +302,8 @@ The framework assumes that
 most enterprise applications
 change only partially between executions.
 
-Instead of repeating discovery across the
-entire application,
+Instead of repeating discovery across every
+previously explored surface,
 the framework performs intelligent comparison.
 
 Discovery philosophy:
@@ -634,7 +645,7 @@ Structural
 
 Behavioral
 
-Visual
+Visual *(OPTIONAL — DISABLED BY DEFAULT)*
 
 Network
 
@@ -1866,7 +1877,7 @@ The Incremental Discovery Engine transforms
 application discovery from a full crawl
 into an intelligent, incremental process.
 
-Instead of rediscovering every page,
+Instead of rediscovering every previously explored page,
 component, API, and workflow on each execution,
 the engine detects only what has changed,
 emits a Discovery Delta for 04 to apply,
