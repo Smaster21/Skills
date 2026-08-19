@@ -4,20 +4,11 @@
 
 **Document:** IMPLEMENTATION_PLAYBOOK.md
 
-**Version:** 4.1
+**Version:** 3.0
 
 **Status:** Non-Normative
 
 **Depends On:** all of `01_Master_Architecture.md` … `10_AI_Learning_Repository.md`
-
----
-
-# Revision History
-
-| Version | Description |
-| ------- | ----------- |
-| 3.0     | Playwright tactics, ZAP tiers, OWASP mapping, performance budgets, hard-won rules |
-| 4.1     | **W8 — Site Explorer boundary.** §5 replaced with the ten QA categories; §6 input-validation payloads removed; §9 (ZAP tiers), §10 (OWASP mapping) and §11 (performance budgets) removed and marked vacant per C4; §13 security/OWASP report entries removed; §15 visual-baseline rule scoped to the optional Visual category; §21 attack-surface projection made permanently `NOT_PRODUCED`. Accessibility, performance, responsive, cross-browser and security testing are no longer qa-automation responsibilities. |
 
 ---
 
@@ -55,9 +46,9 @@ justify skipping a lifecycle stage or quality gate defined in `01`.
 6. Test Data Management
 7. Base Page Object Template
 8. Retry Ladder Implementation
-9. *(removed — W8)*
-10. *(removed — W8)*
-11. *(removed — W8)*
+9. Security Tooling — ZAP Tiers *(removed — out of scope for Site Explorer)*
+10. OWASP Top 10 Mapping *(removed — out of scope for Site Explorer)*
+11. Performance Budgets *(removed — out of scope for Site Explorer)*
 12. Failure Artifact Checklist
 13. Report Formats
 14. CI/CD Integration
@@ -76,21 +67,19 @@ Implements the Project Assembly Engine (`06` §30).
 
 ```
 tests/smoke/  tests/regression/  tests/authentication/  tests/ui/
-tests/navigation/  tests/forms/  tests/functional/  tests/api/  tests/e2e/
-tests/dashboard/°  tests/tables/°  tests/visual/°
+tests/navigation/  tests/forms/  tests/dashboard/  tests/tables/
+tests/api/  tests/visual/  tests/e2e/
 pages/  components/  fixtures/  utils/  data/
 discovery/  knowledge/  planning/  reports/  artifacts/
 playwright.config.ts  README.md
-
-°  created only when the optional category is enabled (§5).
 ```
 
 Dependency installation:
 
 ```bash
 npm init -y
-npm i -D @playwright/test typescript @types/node
-npx playwright install chromium        # NO --with-deps, NO sudo
+npm i -D @playwright/test
+npx playwright install --with-deps chromium
 ```
 
 Environment inputs:
@@ -104,10 +93,6 @@ Environment inputs:
 | `MANUAL` | ❌ | `1` forces headed + 350ms pacing + no retries (§17). Single-window is implied by `--headed` alone. |
 | `SLOWMO` | ❌ | Milliseconds of delay per action. Defaults to `350` under `MANUAL=1`, `0` otherwise. |
 | `ABORT_IF_UNHEALTHY` | ❌ | `1` makes the target health pre-flight a hard gate (§18). |
-| `ALLOW_WRITE_TESTS` | ❌ | `1` permits state-mutating QA tests. Requires synthetic data, mandatory cleanup, scope + RoE, and disclosed mutation (W7-A BD-W7-3). Never enables application-delete tests (§5, C9). |
-
-`SECURITY_SCAN` and `ZAP_API_KEY` were **removed in W8** — this skill performs no
-security scanning at any tier.
 
 Credentials SHALL arrive via environment variables only, and SHALL be masked
 before any persistence (`01` §30, `07` §41).
@@ -121,10 +106,10 @@ With no credentials supplied:
 
 | Stage | Behaviour |
 |---|---|
-| Discovery (`03`) | Runs fully on the public surface. Still detects login pages, session cookies, JWT storage, OAuth/OIDC/SSO and MFA indicators, and marks protected routes — detection never requires logging in (`03` §23). |
+| Discovery (`03`) | Runs fully in Unauthenticated Exploration (publicly reachable surfaces). Still detects login pages, session cookies, JWT storage, OAuth/OIDC/SSO and MFA indicators, and marks protected routes — detection never requires logging in (`03` §23). |
 | Knowledge Graph (`04`) | Protected pages exist as nodes with `requires → authentication`. The graph records what is unreachable, not a smaller application. |
 | Planning (`05`) | Environment validation records credentials as unavailable (`05` §28). Role coverage for authenticated roles is reported as a **coverage gap with a stated cause**, not silently dropped (`05` §18). Auth-dependent workflows are excluded from the plan via the Authentication Dependency (`05` §25). |
-| Generation (`06`) | Generates everything the plan selected. Unauthenticated smoke, UI, navigation, forms, functional and public API all generate normally. |
+| Generation (`06`) | Generates everything the plan selected. Unauthenticated smoke, UI, navigation, forms and public API all generate normally (visual only if the optional/disabled-initially category is enabled). |
 | Execution (`07`) | Runs the generated suite. Nothing is attempted against a protected route it cannot reach. |
 | Reporting (`09`) | **Must state that authenticated coverage did not run, and why** — an unsupplied credential, not a defect and not a pass. |
 
@@ -176,32 +161,30 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Chromium only. Firefox/WebKit and mobile device profiles are out of scope
+    // for the Site Explorer (cross-browser and responsive testing removed).
   ],
 });
 ```
 
-**Chromium only (W8).** Cross-browser testing is not a qa-automation
-responsibility, so `firefox`, `webkit` and the mobile device projects are not
-declared. A declared-but-unrun project misrepresents scope (`SKILL.md` Rule 7).
-
-The browser matrix is still planned by the Browser Planning Engine (`05` §27) —
-its supported set is now Chromium. This template is the shape of the output, not
-the decision.
+The browser matrix is Chromium-only (`05` §27). This template is the shape of the
+output, not the decision.
 
 ---
 
 # 3. Discovery Tactics
 
-Implements `03`. Discovery is observational and non-destructive (`03` §5.4, §36).
+Implements `03`. Discovery is observational and non-destructive (`03` §5.4, §36) —
+it discovers and maps the application but does not exercise interactions; the
+generated Playwright QA tests exercise the discovered interactions during
+EXECUTING (`07`). This skill does not perform interaction-driven discovery.
 
 ## Crawl Procedure
 
 1. Navigate to `BASE_URL`, wait for `networkidle`.
 2. Extract same-origin `<a href>` links.
 3. Extract programmatic routes from `<script>` route tables, `/sitemap.xml`,
-   `robots.txt` (record disallowed paths as intelligence; do not crawl them),
-   JavaScript route strings, and GraphQL endpoint indicators — each with
-   `provenance.discoverySource` per §21.
+   and `robots.txt` (record disallowed paths; do not crawl them).
 4. BFS traversal, max depth 3, same-origin only. Per URL:
    a. Navigate, wait for `networkidle`.
    b. Run the interstitial health check (§15).
@@ -211,16 +194,7 @@ Implements `03`. Discovery is observational and non-destructive (`03` §5.4, §3
    f. Record auth indicators: login forms, JWT in storage, session cookies.
 5. Normalize URLs per the URL Normalization Engine (`03` §18): trailing slashes,
    case, default ports, duplicate and tracking query parameters, fragments.
-6. Deduplicate by deterministic identity before enqueueing; revisit only for a
-   recorded reason (§21).
-7. Record every discovered-but-not-reached surface with its reason
-   (`inaccessible · blocked · capped · excluded · unavailable state ·
-   unavailable credentials`) — §21.
-8. Emit the artifact set required by `03` §11 and §31.
-
-Deep-discovery and API-capture tactics (robots, sitemap, JS routes, GraphQL,
-hidden endpoints, route templates, masked request/response capture, provenance,
-state ladder, explicit absence, determinism) are specified in **§21**.
+6. Emit the artifact set required by `03` §11 and §31.
 
 ## Component Extraction
 
@@ -257,53 +231,23 @@ the failure modes this exists to prevent.
 
 # 5. Test Category Catalogue
 
-Generated per the workflow expansion model in `06` §18. These ten categories are
-the **complete** set qa-automation generates. Category order:
+Generated per the workflow expansion model in `06` §18. Category order:
 
-smoke → authentication → navigation → forms → functional → API →
-dashboard° → table° → UI → visual°
+smoke → auth → navigation → forms → functional → UI → tables → dashboard → API
+→ visual *(optional, disabled initially)*
 
-`°` = **OPTIONAL — DISABLED BY DEFAULT**. Enabled only by explicit configuration
-(`01` §29). Visual generates **no baselines** unless enabled.
-
-| # | Category | Default | Verifies |
-|---|---|---|---|
-| 1 | Smoke | on | App loads, critical pages 200, primary nav reachable, login completes |
-| 2 | Functional | on | Positive · boundary · business-rule · CRUD-except-Delete · state-transition (see below) |
-| 3 | UI | on | Element visibility, presence, ordering, enabled/disabled state, text content, broken assets, overflow |
-| 4 | Forms | on | Empty submit, required fields, max/min length, unicode, emoji, special characters, paste, autofill, disabled/readonly, keyboard tab order |
-| 5 | Authentication | on | Login, logout, register, password reset, session timeout, invalid credentials, session expiry, session transition, role-based access to application features |
-| 6 | Navigation | on | Menus, sidebar, header/footer, breadcrumbs, deep links, 404 handling, redirects, back/forward, refresh state |
-| 7 | API | on | Endpoints from the observed network capture (§21): status handling, timeout, retry, observed schema, contract |
-| 8 | Dashboard | **off** | Widget render, filters, sorting, search, export, pagination, refresh, permission-based visibility |
-| 9 | Table | **off** | Search, per-column sort, filter, pagination, bulk actions, row select, column resize, sticky header, export |
-| 10 | Visual | **off** | Layout shift, missing elements, alignment drift, spacing, pixel diff. No baseline is generated automatically (§15) |
-
-## Functional sub-types (category 2)
-
-| Sub-type | Verifies |
+| Category | Verifies |
 |---|---|
-| Positive | The documented happy path produces the expected observable result |
-| Boundary | Minimum, maximum, just-inside and just-outside values (data table §6) |
-| Business rule | An application rule observed during discovery holds (totals, eligibility, sequencing, dependent fields) |
-| CRUD except Delete | Create, Read, Update only. **Delete is not a test category** — see below |
-| State transition | A state reached through one workflow is correctly reflected in the next |
-
-**Delete (C9).** Discovery MAY record that delete functionality exists — that is
-a factual observation. Generation SHALL NOT emit an application-delete test.
-Synthetic data a test created is still cleaned up by that test (§6) — cleanup of
-own fixture data is an obligation, not a Delete test.
-
-## Not generated by this skill
-
-Accessibility/WCAG compliance · performance/Lighthouse · responsive/viewport
-matrices · cross-browser matrices · **any security test** (SQL injection, XSS,
-SSRF, IDOR, command injection, traversal) · security findings · severity or CVSS
-· security-skill applicability, routing, or recommendation.
-
-Those are not qa-automation responsibilities. A separately selected security
-skill reads this skill's evidence and decides its own methodology (`01` §2,
-`06` §12).
+| Smoke | App loads, critical pages 200, primary nav, login completes |
+| Functional | Positive, negative, boundary, validation; state transitions, CRUD **except Delete** (create/read/update — never delete data), permissions, business rules |
+| UI | Visibility, alignment, broken assets, overflow, spacing, typography, theme, dark mode |
+| Forms | Empty submit, required, max/min length, unicode, emoji, special chars, injection strings, paste, autofill, disabled/readonly, keyboard order |
+| Authentication | Login, logout, register, reset, session timeout, invalid credentials, expiry, JWT, cookie security, CSRF, RBAC |
+| Navigation | Menus, sidebar, header/footer, breadcrumbs, deep links, 404, redirects, back/forward, refresh state |
+| Dashboard *(optional)* | Widget render, chart accuracy, filters, sorting, search, export, pagination, refresh, permission-based visibility |
+| Table *(optional)* | Search, per-column sort, filter, pagination, bulk actions, row select, column resize, sticky header, export |
+| Visual *(optional, disabled initially)* | Layout shift, missing elements, alignment drift, spacing, pixel diff |
+| API | Endpoints from Discovery network capture: 200/400/401/403/404/500, timeout, retry, schema, contract |
 
 Naming follows `06` §22 — descriptive business objectives, never `Test1`:
 
@@ -322,10 +266,7 @@ Never combine unrelated tests in one file.
 - **Never use production data.** Generate synthetic fixtures.
 - Fixtures in `fixtures/`, one JSON per domain entity.
 - `fixtures/factory.ts` exposes builder functions.
-- **Cleanup contract**: any test that creates data removes **its own synthetic
-  data** in `afterEach`. This is a cleanup obligation, not a Delete test (§5,
-  C9). It SHALL NOT be reported as CRUD-Delete coverage, and it SHALL NEVER
-  remove data the test did not create.
+- **Cleanup contract**: any test that creates data deletes it in `afterEach`.
 
 ## Canonical Test Data
 
@@ -339,17 +280,19 @@ Never combine unrelated tests in one file.
 | Date | `2024-01-15` | `not-a-date` | `1970-01-01`, `2099-12-31` |
 | URL | `https://example.com` | `not-a-url` | 2,083 chars |
 
-## Input-Validation Data
+## Input-Validation Strings
 
-Form and boundary tests use the canonical data above plus ordinary
-malformed-input values — empty, whitespace-only, over-length, wrong type, wrong
-format, unicode, emoji, and non-ASCII characters.
+Used to verify that the application validates and safely handles unusual input.
+These are **assertions about functional validation/handling behaviour**, not
+exploitation — qa-automation performs no security testing:
 
-**Attack-shaped payloads SHALL NOT be used** — no SQL injection strings, no XSS
-vectors, no path traversal, no command injection. Submitting them is security
-testing regardless of how the assertion is phrased, and security testing is not
-a qa-automation responsibility (§5, `06` §12). A separately selected security
-skill owns that methodology and supplies its own payloads.
+- Boundary / length: empty, whitespace-only, maximum-length and over-length values
+- Character sets: unicode, emoji, RTL, combining marks, control characters
+- Special characters: quotes, angle brackets, ampersands, backslashes
+
+Offensive payload catalogues (SQL/XSS/path-traversal exploit strings) are **not**
+part of this skill; input-security assessment is owned by the Skillmatrix security
+skills.
 
 ---
 
@@ -448,8 +391,8 @@ repeated success plus Decision Engine approval (`01` §20, `08` §31).
 
 **Final attempt** — the Decision Engine chooses stop, escalate, or continue.
 
-Never retry assertion failures, logic failures, permission failures,
-application exceptions, or security defects (`01` §21, `05` §30, `08` §13).
+Never retry assertion failures, logic failures, permission failures, or
+application exceptions (`01` §21, `05` §30, `08` §13).
 
 ## Hard Limits
 
@@ -486,40 +429,30 @@ repeated success. The Page Object changes on a subsequent generation pass
 
 ---
 
-# 9. REMOVED — W8. Not a qa-automation responsibility.
+# 9. Security Tooling — ZAP Tiers *(removed)*
 
-Formerly "Security Tooling — ZAP Tiers" (Tier 1 passive observation, Tier 2 ZAP
-passive proxy, Tier 3 active scan). Security testing, passive security scanning
-and offensive testing are outside this skill. The `reports/security/` artifact
-tree and `SECURITY_SCAN` configuration no longer exist. A separately selected
-security skill reads Site Explorer evidence and supplies its own tooling.
-
-Section number retained; cross-references to `PLAYBOOK` §9 are intentionally
-resolved to this notice (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Security testing —
+> ZAP passive/active scanning, injection payloads, security tiers, `SECURITY_SCAN`
+> / `ZAP_API_KEY` — is owned exclusively by the Skillmatrix security skills, which
+> consume this skill's QA evidence later. qa-automation performs no security
+> testing. The section number is retained (not renumbered) to preserve existing
+> cross-references.
 
 ---
 
-# 10. REMOVED — W8. Not a qa-automation responsibility.
+# 10. OWASP Top 10 Mapping *(removed)*
 
-Formerly "OWASP Top 10 Mapping (2021)". This skill produces no security finding,
-so there is nothing to categorise. Severity, CVSS and OWASP classification belong
-to the security skill that performs the assessment.
-
-Section number retained (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** OWASP Top 10 mapping is
+> a security-assessment concern owned by the Skillmatrix security skills, not by
+> qa-automation. Section number retained to preserve cross-references.
 
 ---
 
-# 11. REMOVED — W8. Not a qa-automation responsibility.
+# 11. Performance Budgets *(removed)*
 
-Formerly "Performance Budgets" (LCP/CLS/INP/TTFB and Lighthouse score
-thresholds). Performance testing is outside this skill and Lighthouse is no
-longer a tool of this framework.
-
-**Retained elsewhere:** request/response *timing* is still captured as a factual
-observation in the API capture model (§21) and execution telemetry is still
-recorded by `07`/`09`/`10`. Neither is judged against a budget.
-
-Section number retained (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Performance testing
+> (Lighthouse budgets) is not a Site Explorer QA category. Section number retained
+> to preserve cross-references.
 
 ---
 
@@ -551,11 +484,9 @@ twice.
 > `['allure-playwright']` in the reporter array. Not default — it needs a Java
 > runtime and its trending features duplicate `10`.
 
-Content: passed, failed, skipped, duration, screenshots, videos, traces,
-root-cause analysis, retry history, healing events, promoted locators, coverage
-summary, and the exploration disclosure — every discovered-but-not-reached
-surface with its reason (`inaccessible · blocked · capped · excluded ·
-unavailable state · unavailable credentials`), per `09`.
+Content: passed, failed, skipped, duration, browser matrix, screenshots, videos,
+traces, root-cause analysis, retry history, healing events, promoted locators,
+coverage summary.
 
 ---
 
@@ -662,9 +593,9 @@ callback throws `__name is not defined`.
 Keep evaluate bodies free of named inner functions; pass data in as an argument
 instead of declaring a helper inside the callback.
 
-The same transform corrupts **third-party** injected bundles. Any tool that
-injects its own code into the page must run as plain `.mjs`/`.js` under node,
-never through a TypeScript transform.
+The same transform corrupts **third-party** injected bundles. Tools that inject
+their own code into the page must run as plain `.mjs`/`.js` under node, never
+through a TypeScript transform.
 
 ## Standalone scripts do not read the Playwright config
 
@@ -739,30 +670,13 @@ Assert what the application **actually does**, state the target behaviour in the
 assertion message, and raise the gap as a finding. Write the assertion so it
 **inverts cleanly** once the defect is fixed.
 
-Where a known target defect is tolerated, keep an explicit baseline of it plus a
-test that the baselined defect **still exists** — so a fix surfaces as a failure
-telling you to delete the entry. Verify each baselined defect **on the page it
-occurs on**; a single-page check reports defects on other pages as fixed.
+## Prefer the authoritative tool over a hand-rolled equivalent
 
-Gate on new deviations only. Never suppress by lowering the assertion.
-
-## Prefer the authoritative source over a hand-rolled equivalent
-
-If an authoritative mechanism already covers a check, do not also hand-roll it.
-Two mechanisms on one target will disagree, and the hand-rolled one is usually
-the weaker.
-
-> Observed: a hand-rolled accessible-name check accepted `placeholder` as a
-> label, disagreeing with the DOM accessible-name computation. Keeping both meant
-> one deviation reported twice by two mechanisms that disagreed on the rule.
-> Resolve semantic naming from one source — the accessible name computed by the
-> browser, which is also what the locator layer (`06` §26) resolves against.
+If an authoritative engine or the framework's own API already covers a check, do
+not also hand-roll it. Two mechanisms on one target will disagree, and the
+hand-rolled one is usually the weaker.
 
 ## Visual baselines: never `fullPage` on a height-unstable page
-
-> **Applies to the optional Visual category only** (§5, category 10 —
-> **OPTIONAL — DISABLED BY DEFAULT**). No baseline is captured unless Visual is
-> explicitly enabled.
 
 Asynchronous content — recommendation carousels, ad slots, lazy images — changes
 document height between runs, and a height mismatch fails **before any pixel is
@@ -782,7 +696,6 @@ before reporting, and classify each case:
 | Identical assertion, same technique | Delete one. Keep the superset. |
 | Same target, different technique, second adds no signal or is weaker | Delete the weaker. Document the removal in place so it is not reintroduced. |
 | Same target, genuinely different scope or surface | Keep. State why in a comment. |
-| Same assertion across browser projects | Keep — that is the point of the matrix. |
 | Smoke overlapping functional | Keep — smoke is a cheap pre-gate. State that it is deliberate. |
 
 Then report the audit: what was removed, what was kept, and the justification
@@ -801,8 +714,9 @@ source of truth and **generate** everything else from run output.
 
 ## Distinguish "cases run" from "behaviours verified"
 
-A headline test count includes retries and deliberate smoke overlap. Label it
-"cases run". Never present it as a count of distinct verified behaviours.
+A headline test count includes deliberate smoke overlap and re-run repeats.
+Label it "cases run". Never present it as a count of distinct verified
+behaviours.
 
 ## Re-running is not coverage
 
@@ -1757,27 +1671,12 @@ fixture** — no real target, no offensive testing. Runtime-tier satisfaction aw
 the separately-authorized **W7-H** wave. QA remains defensive: discover / observe /
 capture / safe-validate only.
 
-## Scope Boundary (observational — amended W8)
+## Scope Boundary (defensive)
 
-W7-C produces **factual observations** and functional evidence. It SHALL NOT
-exploit, and SHALL NEVER emit the reserved AIC states `OFFENSIVELY_VALIDATED` /
+W7-C produces intelligence and functional evidence. It SHALL NOT exploit, and
+SHALL NEVER emit the reserved AIC states `OFFENSIVELY_VALIDATED` /
 `VULNERABILITY_CONFIRMED` (W7-B §A5). Those belong to the offensive/validator
 authorities that later *consume* the AIC.
-
-**W8 amendment — no security interpretation.** Discovery evidence is factual;
-security interpretation belongs to the separately selected security skill. This
-skill records *that a surface exists and what was observed about it*. It SHALL
-NEVER record, imply, or derive:
-
-- that an attack class applies to a surface,
-- that a security skill should be run against a surface,
-- a probability, likelihood, or confidence that a surface is vulnerable,
-- an attack-surface classification, routing suggestion, or `suggestedSkill`,
-- a severity, CVSS score, or finding.
-
-Permitted factual records include: input exists · form exists · route exists ·
-API endpoint exists · JavaScript route discovered · GraphQL endpoint discovered ·
-authentication surface exists · parameter exists · request/response observed.
 
 ## Discovery Sources & Provenance
 
@@ -1817,57 +1716,6 @@ contacted. Caps (`maxPages`, `maxDepth`, RPS) come from `01` §29 — **never
 hard-code a universal ceiling**; a missing cap is a disclosed config gap, never
 silently infinite. Every skipped/capped/inaccessible surface is disclosed.
 
-## Bounded Exploration Guarantee (W8)
-
-Never claim that every page of an arbitrary application was explored, and never
-state or imply a 100% figure. The guarantee this skill makes is:
-
-> **All reachable, in-scope surfaces discovered within the configured
-> exploration budget**, using browser navigation, discovered links/routes,
-> sitemap, robots, JavaScript routes, network/API observation, forms and
-> interaction discovery, and the supplied authenticated session where present.
-
-Every discovered-but-not-reached surface is recorded with exactly one reason:
-
-`inaccessible · blocked · capped · excluded · unavailable state ·
-unavailable credentials`
-
-An unreached surface with no recorded reason is a defect, not a gap.
-
-## Deterministic Deduplication & No-Re-Crawl (W8, folding W7-A §11)
-
-Every page, route, API, form, parameter and action carries a deterministic
-identity (`sha256[0:16]` of canonical inputs, above). A surface that already has
-an identity SHALL NOT be explored again by default.
-
-A surface MAY be revisited **only** for an explicitly recorded reason:
-
-| Reason | Example |
-|---|---|
-| distinct state | the same route before and after a record is created |
-| distinct authentication context | the same route unauthenticated and authenticated |
-| workflow transition | the route is a step in a different multi-step flow |
-| validation | a locator or assertion target must be probed in its triggered state |
-| explicitly authorized re-discovery | the target materially changed, or data outside the contract is needed (W7-B §C11) |
-
-The reason is persisted with the revisit record. A revisit without a recorded
-reason is a defect. Re-discovery never silently replaces prior history — it is
-recorded as new provenance/evidence.
-
-## Exploration Mode (W8)
-
-Two modes, both of which require scope and authorization:
-
-| Mode | Credentials/session | Explores |
-|---|---|---|
-| **Unauthenticated Exploration** | none supplied | publicly reachable in-scope surfaces |
-| **Authenticated Exploration** | supplied via env | additionally, the authenticated surfaces reachable by that account |
-
-Authentication mode is **not** authorization. Scope and Rules of Engagement
-(`01` §30, `reference/output-and-scope.md`) are mandatory in both modes.
-Surfaces requiring credentials that were not supplied are recorded
-`unavailable credentials`, never guessed at and never bypassed.
-
 ## API Capture — masking is the gate (W7-B §B15, `01` §30, `07` §41)
 
 For every observed call, build masked request + response evidence and an
@@ -1898,15 +1746,9 @@ array element type, GraphQL indicators). Uncertainty → explicit W7-B absence
 
 Never use bare `null/0/false/[]` for meaning. Use
 `EMPTY · UNAVAILABLE · NOT_PRODUCED · BLOCKED · NOT_EXERCISED · NOT_OBSERVED`.
-Fields owned by later waves (journeys result → W7-F; full graph serialization →
-W7-D) are emitted as `NOT_PRODUCED`, never fabricated.
-
-**`attackSurface` is permanently `NOT_PRODUCED` by qa-automation (W8 / C1).**
-The AIC collection key remains in the frozen W7-B v1.0.0 shape and the W7-A
-ratification record stands unaltered as history, but this skill SHALL NEVER
-populate it — in this run or any future one. Wave W7-E (attack-surface projection)
-is **not authorized for qa-automation**. The reason string emitted is a permanent
-boundary statement, not a deferral.
+Fields owned by later waves (journeys result → W7-F; attack-surface projection →
+W7-E; full graph serialization → W7-D) are emitted as `NOT_PRODUCED`, never
+fabricated.
 
 ## Determinism (W7-B §A10)
 

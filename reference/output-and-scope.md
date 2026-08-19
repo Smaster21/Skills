@@ -2,131 +2,164 @@
 
 > Executor reference. How this skill maps onto the coordination system's
 > `$OUTPUT_DIR` discipline, which environment variables it reads, and the
-> mandatory scope check. This skill is the **Site Explorer** backend — it writes
-> a QA phase directory, never `findings/finding-NNN/`.
+> mandatory scope check. QA is **defensive** — it writes a QA phase directory,
+> not `findings/finding-NNN/`.
 
-## Phase directory — write into `$OUTPUT_DIR/qa/`, never the root
+## Output root — `./output/qa/`
 
-The coordinator owns `$OUTPUT_DIR`'s root-level files. This skill writes only
-inside its phase directory `$OUTPUT_DIR/qa/`.
+A Site Explorer run writes **only** under `./output/qa/`. It never writes to
+`output/findings/`, `output/security/`, or `output/redops/`, and never creates a
+security-style output directory.
 
-```
-$OUTPUT_DIR/
-└── qa/                        ← this skill's phase directory
-    ├── discovery/             discovery-report.json, component-inventory.json,
-    │                          verified-inventory.json, assertion-target-probes.json
-    ├── knowledge/             knowledge-graph.json, graph-diff.json
-    ├── planning/              test-plan.json, runtime-schedule.json
-    ├── pages/ fixtures/ tests/  generated Playwright suite
-    ├── decision-history/      decision-000N.json  (evidence + Evidence Quality + Framework Confidence)
-    ├── execution-history/     execution-*.json, deviation-record.json
-    ├── reports/               results.json, results.xml, html/, diagnostics.json,
-    │                          analytics.json, target-health.json,
-    │                          exploration-disclosure.json, rw-report.md
-    ├── aic/                   AIC serialization (04, PLAYBOOK §21):
-    │                          pages, routes, apis, api-calls, forms, parameters,
-    │                          auth-surfaces, robots, javascript-routes,
-    │                          relationships, manifest
-    │   └── evidence/          requests/, responses/ (masked), screenshots/
-    └── raw/                   traces, screenshots, videos (retain-on-failure)
-```
-
-`aic/attack-surface` is **permanently `NOT_PRODUCED`**. This skill emits no
-attack-surface projection, no `candidateAttackClass`, and no `suggestedSkill`
-(Ownership Matrix, W8 / C1).
-
-Discipline (per `coordination/reference/output-discipline.md`):
-
-- Machine-readable artifacts are JSON (`discovery/`, `knowledge/`, `planning/`).
-- Human-readable analysis is markdown (`reports/*.md`).
-- Never mix raw tool output with analysis — raw traces/screenshots live in `raw/`.
-- Preserve all raw output for reproducibility.
-- A previous execution's `qa/` tree is immutable — a new run writes a new
-  boundary; it never overwrites or appends to an earlier one.
-
-### Why not `findings/finding-NNN/`
-
-That layout is for **security skills** producing findings with a PoC and CVSS.
-This skill produces **exploration evidence and QA results** — recorded in
-`qa/aic/`, verified in `qa/decision-history/`, and reported in `qa/reports/`. A
-functional failure is triaged as a **target defect**, a **suite defect**, or an
-**environment artifact** — never as a finding, and never assigned a severity.
-
-### The architectural boundary
+**Run isolation** is at the `./output/` boundary: one output root per run, so
+`qa/` inside it is flat and deterministic. A run never writes into another run's
+output root (`Rule 9`).
 
 ```
-qa-automation (Site Explorer)              selected security skill
-──────────────────────────────             ───────────────────────────────────
-Discovery                                  User selects the security skill
-  → Application understanding                → RedOps mounts it
-  → QA test planning                         → It reads Site Explorer evidence
-  → QA test generation                       → It determines its own targets
-  → Playwright execution                     → It determines its own methodology
-  → QA results                               → Security execution
-  → Evidence / reports                       → Security evidence → validation
-                                             → Finding
-
-"What exists in the application,           "Given the explicitly selected
- and what evidence do we have?"              methodology, what security tests
-                                             should be performed, and how?"
+./output/qa/
+├── README.md                     plain-language guide to this directory
+├── run.json                      execution metadata only (never credentials)
+├── summary.json                  compact machine-readable result
+│
+├── report/
+│   ├── final-report.md           the human deliverable
+│   └── final-report.json         structured equivalent, stable for API/UI
+│
+├── discovery/                    WHAT THE APPLICATION CONTAINS
+│   ├── discovery-summary.json    pages.json          routes.json
+│   ├── application-map.json      forms.json          inputs.json
+│   ├── components.json           states.json
+│
+├── network/                      DERIVED VIEW over the AIC — never canonical
+│   ├── network-summary.json      api-inventory.json  endpoints.json
+│   ├── requests.json             responses.json
+│   │   (presentation of AIC `apis`/`api-calls`; reuses AIC ids; deleting this
+│   │    directory must lose nothing the AIC does not still hold)
+│
+├── knowledge/                    WHAT WAS LEARNED
+│   ├── application-model.json    page-model.json
+│   ├── workflow-model.json       interaction-model.json
+│
+├── planning/
+│   ├── exploration-plan.json     workflow-plan.json  test-strategy.json
+│
+├── tests/
+│   ├── catalogue.json            the traceability spine
+│   ├── generated/*.spec.ts       pages/*.ts          fixtures/*.ts
+│
+├── execution/
+│   ├── execution-summary.json    test-results.json
+│   ├── failures.json             retries.json
+│
+├── evidence/
+│   ├── evidence-index.json
+│   ├── tests/TC-…/               per-test evidence (only files that exist)
+│   └── screenshots/  traces/  videos/  network/  raw/
+│
+├── coverage/                     APPLICATION EXPLORATION COVERAGE
+│   ├── coverage-summary.json     route-coverage.json
+│   ├── workflow-coverage.json    test-coverage.json
+│
+├── diagnostics/
+│   ├── failures.json             locator-healing.json
+│   ├── retry-history.json        blocked-actions.json
+│
+└── raw/                          low-level streams
+    ├── agent-events.jsonl        decision-history.jsonl
+    └── execution-events.jsonl
 ```
 
-This skill never crosses that line. It emits no security applicability tag, no
-routing suggestion, no probability, no recommendation, and no finding.
+### Artifact categories — never mixed
 
-## Environment contract — non-interactive
+`A` run metadata · `B` discovery · `C` network/API · `D` application knowledge ·
+`E` planning · `F` test generation · `G` execution · `H` evidence · `I` coverage ·
+`J` diagnostics · `K` final report · `L` raw/debug.
 
-Reads context from environment variables only; no prompt ever blocks a run.
+A screenshot is evidence. A generated spec is `tests/generated/`. A route list is
+discovery. An endpoint inventory is network. A retry history is diagnostics. The
+report is `report/`. One artifact, one category.
 
-| Variable | Required | Meaning |
-|---|:---:|---|
-| `OUTPUT_DIR` | ✅ | Root output dir; this skill writes under `$OUTPUT_DIR/qa/` |
-| `BASE_URL` | ✅* | Full URL to the app entry point |
-| `TARGET` / `TARGET_DOMAIN` | ✅* | Accepted as `BASE_URL` fallback (coordinator spelling) |
-| `SCOPE_FILE` | ⛒ | If present, every target validated against it before navigation |
-| `ROE_FILE` | ⛒ | If present, honor time-based restrictions / blackout / expiry |
-| `TEST_USER` / `TEST_PASS` | ❌ | Present → **Authenticated Exploration**; absent → **Unauthenticated Exploration**. Absence narrows scope, never stops a run |
-| `ALLOW_WRITE_TESTS` | ❌ | `1` permits state-mutating QA tests: synthetic data, mandatory cleanup, scope + RoE, disclosed mutation (W7-A BD-W7-3). **Never** enables application-delete tests |
-| `CI` | ❌ | Fewer workers, more retries |
+### Stable identifiers — mandatory
 
-**Authentication mode is not authorization.** `SCOPE_FILE` / `ROE_FILE`
-validation below is mandatory in **both** exploration modes. Removed in W8:
-`SECURITY_SCAN`, `ZAP_API_KEY` — this skill performs no security scanning.
+Identity is an assigned ID, **never** a filename or URL:
 
-\* At least one of `BASE_URL` / `TARGET` / `TARGET_DOMAIN` must resolve to a URL.
+`PAGE-001` · `ROUTE-001` · `API-001` · `WF-001` · `TC-001` · `EVID-001`
 
-Credentials arrive via env only and are **masked before any persistence**
-(`01` §30, `07` §41). No secret reaches a log, report, screenshot, trace, or
-artifact.
+> **Reuse before minting.** Where an AIC record already carries an identifier
+> (`sha256[0:16]` of canonical inputs), that id is authoritative and is reused
+> verbatim. Readable aliases above are a **1:1 display mapping** that always
+> carries the AIC id alongside — never a second API identity system.
 
-## Scope enforcement — before any network action (non-negotiable)
+IDs are deterministic for identical input (`PLAYBOOK` §19) and are the join keys
+for the traceability chain:
 
-```bash
-# Validate the target (and its resolved IP) against SCOPE_FILE if provided.
-if [ -f "$SCOPE_FILE" ]; then
-  host=$(echo "${BASE_URL:-$TARGET}" | sed -E 's#^[a-z]+://##; s#/.*$##; s#:.*$##')
-  if ! grep -qE "$(echo "$host" | sed 's/\./\\./g')" "$SCOPE_FILE"; then
-    ip=$(dig +short "$host" | head -1)
-    if [ -z "$ip" ] || ! grep -qE "$(echo "$ip" | sed 's/\./\\./g')" "$SCOPE_FILE"; then
-      echo "[ABORT] $host (or its IP) not in SCOPE_FILE" >&2
-      exit 1
-    fi
-  fi
-fi
+```
+PAGE → WORKFLOW → TEST CASE → GENERATED SPEC → EXECUTION RESULT → EVIDENCE
+PAGE → OBSERVED API → WORKFLOW → TEST CASE
 ```
 
-If `SCOPE_FILE` is absent, fall back to the skill's own rule: proceed **only**
-against an explicitly authorized target, and STOP with `BLOCKED` if the target
-or its authorization is missing or ambiguous. Never discover, invent, or
-substitute a target.
+Every generated spec maps back through `tests/catalogue.json` to its test case and
+its source workflow. Traceability is **mandatory**, not best-effort.
 
-## Cleanup and determinism
+### Provenance — W7-B's vocabulary, presented
 
-- Close browsers/contexts; leave no lingering process, temp file, or open
-  connection on exit.
-- Deterministic output for identical input: no unseeded randomness, no
-  wall-clock value used as a magnitude (`01` §3.1, `PLAYBOOK` §19 determinism).
-- Deterministic surface identity (`sha256[0:16]` of canonical inputs); a surface
-  is revisited only with a recorded reason (`PLAYBOOK` §21).
-- Masking runs **before** any persistence, through one authority. No raw secret
-  reaches a log, report, screenshot, trace, or artifact (`01` §30, `07` §41).
+Provenance and state come from the **existing** W7-B fields; the report presents
+them, it does not define a parallel scheme:
+
+- `provenance.discoverySource` ∈ `crawl · js · sitemap · robots · network · verification`
+- state ladder `DISCOVERED → OBSERVED → EXERCISED → VALIDATED` — **never collapsed**,
+  and `VALIDATED` is never emitted by QA
+
+| Report wording | Backed by |
+|---|---|
+| observed | state `OBSERVED` (`discoverySource: network`) |
+| discovered | state `DISCOVERED` (`js` / `sitemap` / `robots` / `crawl`) |
+| inferred | a derived association, explicitly labelled |
+| generated | produced by the framework (a test, a plan) |
+
+**Never present inferred, discovered, or generated material as observed** — a
+string found in JavaScript is not proof the endpoint was called. Same discipline
+`Rule 4` applies to evidence, extended to the model.
+Full contract: `w7-api-evidence-contract.md`.
+
+### This is a QA report, not a security assessment
+
+The output is limited to QA and application-exploration content. Vulnerability
+findings, CVSS, exploitability, attack priority, security coverage, security
+recommendations, and any security decision layer all fall outside it. Coverage is **Application Exploration Coverage** /
+**QA Coverage** — never "security coverage". A failure is a QA failure category
+(`locator_failure`, `assertion_failure`, `timeout`, `navigation_failure`,
+`authentication_failure`, `network_failure`, `environment_failure`,
+`test_data_failure`, `application_behavior_failure`, `blocked`, `unknown`) — never
+a vulnerability.
+
+Security assessment is owned separately by the Skillmatrix security skills, which
+may consume this evidence later. This skill emits none of it.
+
+### Sensitive data — one masking authority, already implemented
+
+Masking runs **before any persistence through a single existing authority**
+(W7-B §B15, `01` §30, `07` §41); reprs `plain · masked · redacted · omitted ·
+hashed · binary`, with unknown sensitivity defaulting to `masked`.
+
+**Do not implement a second masking system.** The output layer consumes
+already-masked evidence and never weakens, bypasses, or re-derives it. No
+password, token, bearer/authorization header, cookie, session secret, API key or
+private key reaches any artifact.
+
+Absence uses W7-B §C7 vocabulary — `EMPTY · UNAVAILABLE · NOT_PRODUCED ·
+BLOCKED · NOT_EXERCISED · NOT_OBSERVED` — never a bare `null`, `0`, `false` or
+`[]` carrying meaning.
+
+### Determinism and backward compatibility
+
+Stable names only — never `report-new.json`, `final-final-v2.json`, or
+`output123.json`. Identical input yields identical artifact names and locations.
+
+Before renaming or removing an existing artifact, identify its consumers
+(result ingestion, runner logic, tests). Where a consumer exists, provide a
+deterministic adapter or a compatibility period. **Never silently break an
+existing artifact contract.**
+
+Environment variables, the scope check, cleanup and determinism:
+**`scope-enforcement.md`**.

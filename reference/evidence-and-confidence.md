@@ -14,7 +14,7 @@ Real execution observation
         → Per-item confidence        docs/IMPLEMENTATION_PLAYBOOK.md §19
         → Evidence Quality           docs/IMPLEMENTATION_PLAYBOOK.md §19 → the 0.35 term of 02 §21
         → Framework Confidence       docs/02_Decision_Engine.md §21   (SOLE authority)
-        → Decision / report artifacts  qa/decision-history/, qa/reports/
+        → Decision / report artifacts  qa/raw/decision-history.jsonl, qa/report/
 ```
 
 ## Evidence Objects — observed, never authored
@@ -83,7 +83,7 @@ error, and never halts execution (`10` §7.3).
 | Evidence Quality | the decision's evidence record | `02` §36 |
 | Framework Confidence + each term's value/reason | the decision audit record | `02` §39 |
 
-All three destinations already exist under `qa/decision-history/`. No dataset,
+All three destinations already exist in `qa/raw/decision-history.jsonl`. No dataset,
 file, or schema is created for this chain.
 
 ## Validation tiers — do not overclaim

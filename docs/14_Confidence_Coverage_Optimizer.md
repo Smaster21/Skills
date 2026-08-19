@@ -5,16 +5,9 @@
 
 **Document:** 14_Confidence_Coverage_Optimizer.md
 
-**Version:** 4.1
+**Version:** 4.0
 
 **Status:** Draft
-
-> **Revision 4.1 — W8, Site Explorer boundary.** Browser Coverage replaced with
-> Exploration Coverage in the two coverage-dimension lists (Chromium only).
-> §24 Performance Optimization Strategy and §25 Security & Governance are
-> **unchanged** — both concern the framework, not the target. Coverage
-> optimization and stop-condition recommendation remain recommendation-only to
-> `02`.
 
 **Depends On:**
 
@@ -507,7 +500,7 @@ The dimensions below are **measured by 05** and consumed here for ranking:
 - API Coverage
 - Business Rule Coverage
 - User Role Coverage
-- Exploration Coverage
+- Browser Coverage
 - Environment Coverage
 - Data Coverage
 - Assertion Coverage
@@ -1222,7 +1215,7 @@ The optimizer SHALL record:
 - UI Coverage
 - Component Coverage
 - Assertion Coverage
-- Exploration Coverage
+- Browser Coverage
 - Environment Coverage
 - Risk Coverage
 - Coverage Growth Rate
@@ -1572,9 +1565,6 @@ before influencing future execution
 
 # 24. Performance Optimization Strategy
 
-> **Framework execution performance only (W8).** Target performance testing was
-> removed (`01` §2, `16` §63).
-
 The optimizer SHALL minimize
 engineering cost.
 
@@ -1609,9 +1599,6 @@ required engineering quality.
 ---
 
 # 25. Security & Governance
-
-> **Governance only (W8 / C5).** Secret masking and evidence protection. No
-> security assessment of the target.
 
 Optimization SHALL comply
 with framework governance.

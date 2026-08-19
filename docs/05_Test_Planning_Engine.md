@@ -4,17 +4,9 @@
 
 **Document:** 05_Test_Planning_Engine.md
 
-**Version:** 4.1
+**Version:** 3.0
 
 **Status:** Draft
-
-> **Revision 4.1 — W8, Site Explorer boundary.** Accessibility, Security and
-> Performance coverage dimensions and execution strategies removed; Visual marked
-> OPTIONAL — DISABLED BY DEFAULT. §27 Browser Planning Engine **retained** as the
-> planning owner with its supported set reduced to Chromium. §18 gains the ten
-> canonical QA categories and the Exploration Coverage dimension. §30 non-retry
-> categories reworded away from security vocabulary. No engine, dataset, or
-> ownership changed.
 
 **Depends On:**
 
@@ -822,42 +814,9 @@ Component Coverage
 
 Environment Coverage
 
-Visual Coverage *(OPTIONAL — DISABLED BY DEFAULT)*
+Visual Coverage *(optional, disabled initially)*
 
 Regression Coverage
-
-Exploration Coverage
-
----
-
-## Canonical QA Categories (W8)
-
-Coverage is planned across exactly these ten categories. The tactical definition
-of each is owned by `IMPLEMENTATION_PLAYBOOK` §5.
-
-| # | Category | Default |
-|---|---|---|
-| 1 | Smoke | on |
-| 2 | Functional — positive · boundary · business-rule · CRUD-except-Delete · state-transition | on |
-| 3 | UI | on |
-| 4 | Forms | on |
-| 5 | Authentication | on |
-| 6 | Navigation | on |
-| 7 | API | on |
-| 8 | Dashboard | **off** |
-| 9 | Table | **off** |
-| 10 | Visual | **off** |
-
-Accessibility, performance, responsive, cross-browser and security are **not**
-categories and SHALL NOT be planned (`01` §2).
-
-## Exploration Coverage
-
-Exploration Coverage measures reachable, in-scope surfaces explored within the
-configured budget. It SHALL NEVER be expressed as a claim that every page was
-explored. Every unreached surface carries exactly one recorded reason:
-`inaccessible · blocked · capped · excluded · unavailable state · unavailable
-credentials` (`01` §2.2).
 
 ---
 
@@ -1086,7 +1045,7 @@ Full
 
 API
 
-Visual *(OPTIONAL — DISABLED BY DEFAULT)*
+Visual *(optional, disabled initially)*
 
 Custom
 
@@ -1462,15 +1421,8 @@ required for execution.
 
 ## Supported Browsers
 
-Chromium
-
-> **W8.** Cross-browser testing is not a qa-automation responsibility
-> (`01` §2, `16` §65). Firefox, WebKit, Microsoft Edge, Google Chrome and Mobile
-> Emulation were withdrawn from the supported set and SHALL NOT be planned.
->
-> This engine is **retained** as the planning owner: the framework still decides
-> and records a browser matrix, and `07` remains the sole runtime authority. The
-> supported set is now a single entry.
+Chromium *(only — Firefox, WebKit, Edge, Chrome channels and mobile emulation are
+out of scope: cross-browser and responsive testing removed)*
 
 ---
 
@@ -1480,17 +1432,17 @@ Required browsers
 
 Execution order
 
+Parallel browsers
+
 Headless mode
 
 Headed mode
 
-Viewport configuration *(single default viewport — `16` §33)*
+Viewport configuration
+
+Device profiles
 
 Browser-specific retries
-
-A browser project SHALL NEVER be declared unless it is actually executed. A
-declared-but-unrun project misrepresents scope and is a reporting-integrity
-defect (`09`).
 
 ---
 
@@ -1673,10 +1625,6 @@ Business logic failures
 Permission failures
 
 Application crashes
-
-A non-retryable failure is a **target defect, suite defect, or environment
-artifact** (`08` §16, `01` §23). It SHALL NEVER be reclassified as a security
-finding.
 
 ---
 
@@ -2075,3 +2023,49 @@ and all downstream framework components.
 ---
 
 # End of 05_Test_Planning_Engine.md
+
+---
+
+# Planning Obligations Added From Runtime Evidence
+
+These obligations are binding on this engine. Each was added after a real
+execution demonstrated its absence produced defective coverage. Executor
+technique: `reference/` as cited.
+
+## P-1 Intent binding (no substitution)
+
+A planned case names the target it intends to exercise. It SHALL bind only to a
+verified locator whose **accessible name matches that intent**. Where none
+matches, the case SHALL be **dropped** and recorded in the coverage ledger as
+`NO_INTENT_MATCH`.
+
+Binding to "the first available verified control" is FORBIDDEN. That fallback
+produced a passing test which asserted nothing about the field it named.
+→ `reference/site-agnostic-discovery.md`
+
+## P-2 Forms are workflows
+
+A form case SHALL be planned as `populate → submit → assert resulting state`,
+with `reset → assert cleared` where a reset affordance exists. Planning only
+field visibility and value round-trip does NOT constitute form coverage.
+
+## P-3 Expectations require provenance
+
+Every planned assertion SHALL carry the measurement it derives from and the
+**scope** that measurement is valid in (route, auth state, trigger state). An
+expectation with no measurement is authored, not observed, and is a defect
+equivalent to an authored confidence value (`02` §18, `SKILL.md` Rule 4).
+→ `reference/suite-self-validation.md`
+
+## P-4 No caps
+
+Planning SHALL NOT truncate any population — no `slice(n)`, no "first N", no
+per-category cap. Every discovered artifact terminates as `TESTED` or `EXCLUDED`
+with a closed-vocabulary reason. → `reference/coverage-ledger.md`
+
+## P-5 Writes require an environment class
+
+Write cases (`CRUD-except-Delete`, business-rule persistence) SHALL be planned
+only where `TEST_ENV_CLASS` permits. Where it does not, they are ledgered
+`POLICY_EXCLUDED` **with a stated consequence** — never omitted.
+→ `reference/write-operations-and-test-data.md`

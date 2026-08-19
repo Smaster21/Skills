@@ -5,17 +5,9 @@
 
 **Document:** 11_Unified_Test_Intelligence_Engine.md
 
-**Version:** 4.1
+**Version:** 4.0
 
 **Status:** Draft
-
-> **Revision 4.1 — W8, Site Explorer boundary.** The Accessibility, Performance,
-> Security and Visual analysis dimensions are removed throughout; the engine
-> unifies **Functional · Component · Workflow · API · Runtime** analysis. The
-> engine itself, its optional/skippable status, its two owned capabilities
-> (Unified Intelligence Projection, Framework Cache Service) and its region
-> tenancy are **unchanged**. It produces no security interpretation of any kind
-> (`01` §2.1).
 
 **Depends On:**
 
@@ -68,8 +60,8 @@ a single comprehensive analysis of an application and producing a unified
 engineering understanding that can be reused by every downstream testing
 capability.
 
-Instead of allowing Functional analysis, Component analysis, Workflow analysis,
-API analysis and AI Planning to independently analyze the same application,
+Instead of allowing Functional Testing, API Testing, Visual Testing,
+and AI Planning to independently analyze the same application,
 the Unified Test Intelligence Engine performs analysis once and
 shares the resulting intelligence across the framework.
 
@@ -130,11 +122,7 @@ Functional Scan
 
 ↓
 
-Component Scan
-
-↓
-
-Workflow Scan
+Visual Scan
 
 ↓
 
@@ -167,7 +155,7 @@ The engine SHALL build a unified engineering model for:
 - UI components
 - Business workflows
 - API interactions
-- Semantic and role metadata (locator/self-healing evidence — C7)
+- Visual structure
 - Runtime behavior
 - Application technologies
 
@@ -342,7 +330,7 @@ API Dependencies
 
 ↓
 
-Semantic & Role Metadata
+Visual Structure
 
 ↓
 
@@ -397,7 +385,7 @@ The package includes:
 - Component Intelligence
 - Workflow Intelligence
 - API Intelligence
-- Runtime Intelligence
+- Visual Intelligence *(optional, disabled initially)*
 - AI Planning Metadata
 
 This package is a **derived projection**, not a knowledge source of record.
@@ -487,6 +475,8 @@ Component Intelligence
 Workflow Intelligence
 
 API Intelligence
+
+Visual Intelligence *(optional, disabled initially)*
 
 Runtime Intelligence
 
@@ -588,9 +578,8 @@ and deterministic execution.
 Functional   Component      Workflow        API
 Analyzer     Analyzer       Analyzer        Analyzer
 
-                           │
-                           ▼
-                     Runtime Analyzer
+(A Visual Analyzer is optional and disabled initially. Security, Accessibility
+and Performance analyzers are out of scope for the Site Explorer.)
 
                            │
                            ▼
@@ -636,7 +625,7 @@ Coordinate
 - Component Analysis
 - Workflow Analysis
 - API Analysis
-- Runtime Analysis
+- Visual Analysis *(optional, disabled initially)*
 
 Track
 
@@ -808,7 +797,7 @@ without the Service acquiring knowledge of any consumer's domain.
 
 | Region | Semantic Owner | Content |
 | ------ | -------------- | ------- |
-| `intelligence` | **11** (this engine) | Page, component, workflow, API, runtime analysis projections |
+| `intelligence` | **11** (this engine) | Page, component, workflow, API, visual analysis projections |
 | `discovery` | **13** | Discovery snapshots, fingerprints |
 | `planning` | **05** | Coverage reuse |
 | `runtime-prediction` | **12** | Historical runtime data |
@@ -1240,10 +1229,6 @@ Dependencies
 
 Authentication
 
-Observed request/response metadata (masked — `PLAYBOOK` §21)
-
-Observed timing (factual, never budgeted)
-
 Business Mapping
 
 ---
@@ -1642,7 +1627,7 @@ projection is an optimization; its absence SHALL NEVER block execution.
 
 This engine performs application analysis once and reprojects the Knowledge
 Graph into a reuse-optimized package, eliminating duplicated analysis across
-functional, component, workflow, API and runtime concerns.
+functional, component, workflow, API, and visual concerns.
 
 It owns exactly two capabilities: the **Unified Intelligence Projection** and
 **Cache Management**.

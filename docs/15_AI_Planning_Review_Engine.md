@@ -5,18 +5,9 @@
 
 **Document:** 15_AI_Planning_Review_Engine.md
 
-**Version:** 4.1
+**Version:** 4.0
 
 **Status:** Draft
-
-> **Revision 4.1 — W8, Site Explorer boundary.** Review questions, review
-> dimensions, configuration categories and — most importantly — the
-> **"Security Recommendation" and "Accessibility Recommendation" categories are
-> removed**. This engine SHALL NEVER recommend a security skill, a security test,
-> or a security methodology; that is the closest construct this framework had to
-> a security-applicability layer and it does not exist any more (`01` §2.1,
-> C1). The engine remains **advisory-only to `02`**, optional and skippable, and
-> owns no decision.
 
 **Depends On:**
 
@@ -166,13 +157,7 @@ Have important edge cases been missed?
 
 Is execution order optimal?
 
-Is browser coverage appropriate?
-
 Should API tests be added?
-
-Should an optional category (Visual, Dashboard, Table) be enabled?
-
-Is the exploration budget appropriate for the observed surface?
 
 Are fixtures reusable?
 
@@ -481,7 +466,6 @@ Every review SHALL evaluate:
 - Execution Cost
 - Estimated Runtime
 - API Coverage
-- Exploration Coverage
 - Maintainability
 - Scalability
 - Historical Learning Alignment
@@ -820,26 +804,7 @@ Browser Optimization
 
 Data Strategy Improvement
 
-Exploration Budget Improvement
-
 Maintainability Improvement
-
----
-
-## Prohibited Recommendations (W8)
-
-This engine SHALL NEVER produce:
-
-- a security recommendation of any kind
-- a recommendation to run, mount, or select a security skill
-- an attack-class or attack-surface suggestion
-- a probability, likelihood, or confidence that a surface is vulnerable
-- a filtered security test plan
-
-There is no security-applicability, routing, or recommendation layer in this
-framework. A separately selected security skill reads Site Explorer evidence and
-determines its own methodology (`01` §2.1,
-`Architecture_Ownership_Matrix.md`).
 
 ---
 
@@ -1373,10 +1338,6 @@ Execution
 AI
 
 Learning
-
-Exploration
-
-Governance
 
 Reporting
 

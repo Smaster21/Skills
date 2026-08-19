@@ -4,20 +4,11 @@
 
 **Document:** 02_Decision_Engine.md
 
-**Version:** 4.1
+**Version:** 3.0
 
 **Status:** Draft
 
 **Depends On:** 01_Master_Architecture.md
-
----
-
-# Revision History
-
-| Version | Description |
-| ------- | ----------- |
-| 3.0     | Enterprise decision engine: decision pipeline, evidence (§18), Framework Confidence (§21), rules, audit (§39) |
-| 4.1     | **W8 — Site Explorer boundary.** Decision questions, rule categories, permitted actions and examples referencing accessibility, performance and security testing removed. `02` §18 Evidence Objects, §21 Framework Confidence and its fixed weights, §36 evidence records and §39 audit records are **unchanged**. |
 
 ---
 
@@ -135,12 +126,6 @@ Should execution continue?
 Should the failure be escalated?
 
 Which workflow has highest priority?
-
-Which browser should execute first?
-
-Should an optional category (Visual, Dashboard, Table) execute?
-
-Should a discovered surface be revisited, and for which recorded reason?
 
 Every decision must produce evidence.
 
@@ -348,8 +333,7 @@ Should page object be generated?
 
 Should API tests exist?
 
-Should a visual baseline be captured? *(only when the optional Visual category
-is explicitly enabled — `16` §62; never captured by default)*
+Should visual baseline be captured? *(only when the optional visual category is enabled)*
 
 ---
 
@@ -1101,10 +1085,6 @@ Planning Rules
 
 Execution Rules
 
-Exploration Rules
-
-Governance Rules
-
 Risk Rules
 
 Reporting Rules
@@ -1178,10 +1158,6 @@ Coverage
 Reporting
 
 Learning
-
-Exploration
-
-Governance
 
 Plugins
 
@@ -2008,10 +1984,6 @@ Reporting
 
 Learning
 
-Exploration
-
-Governance
-
 Configuration
 
 Plugins
@@ -2056,17 +2028,13 @@ Informational
 
 Example
 
-Clean Up Own Synthetic Test Data
+Delete Test Data
 
 Critical
 
 Retry Click
 
 Low
-
-Skip Optional Category
-
-High
 
 ---
 

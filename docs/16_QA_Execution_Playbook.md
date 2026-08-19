@@ -1,21 +1,12 @@
 # 16_QA_Execution_Playbook.md
 
-Version: 4.1
+Version: 4.0
 Status: Non-Normative Operational Playbook
 Classification: Operational Playbook
 
 **This document is NOT an engine.**
 
 **The Engine Registry remains Documents 01–15.**
-
----
-
-# Revision History
-
-| Version | Description |
-| ------- | ----------- |
-| 4.0     | Operational doctrine: 120 sections across planning, execution strategy, autonomous execution, reporting and governance |
-| 4.1     | **W8 — Site Explorer boundary.** §60 (Accessibility Validation), §61 (Responsive Design Validation), §63 (Performance Validation), §64 (Security Validation), §65 (Browser Compatibility Validation) and §66 (Cross-Platform Validation) removed and marked vacant per C4. §32 Browser Strategy reduced to Chromium. §33 Device Strategy reduced to the default viewport. §44 CRUD Strategy excludes Delete from generation. §49 Authorization Validation restated as functional RBAC behaviour. §62 Visual Validation marked OPTIONAL — DISABLED BY DEFAULT. Section numbers are unchanged; all existing cross-references remain valid. |
 
 ---
 
@@ -200,7 +191,7 @@ Evidence includes:
 
 • Network traffic
 
-• Timing observations (factual; never judged against a budget — §63)
+• Performance metrics
 
 A test without evidence SHALL NOT be considered complete.
 
@@ -262,13 +253,13 @@ Each environment SHALL define:
 
 • Allowed authentication methods
 
-• Safety level (§10)
+• Security level
 
 • Cleanup requirements
 
 • Browser strategy
 
-• Rate and resource limits
+• Performance limits
 
 • Reporting requirements
 
@@ -296,13 +287,10 @@ Destructive Testing
 
 The framework SHALL never exceed the environment's permitted safety level.
 
-Levels 4 and 5 — formerly "Security Validation" and "Authorized Active Security
-Scanning" — were **removed in W8**. There is no safety level at which this skill
-performs security validation or security scanning; the capability does not exist
-here at any tier (§64).
-
 Per `01` §2, **penetration testing remains a non-goal** and **production
-exploitation remains a non-goal**.
+exploitation remains a non-goal**. Security testing — passive or active scanning
+included — is **out of scope for qa-automation** and is owned exclusively by the
+Skillmatrix security skills.
 
 ---
 
@@ -514,7 +502,7 @@ Objectives MAY include:
 • Integration validation
 • End-to-End validation
 • API verification
-• Visual validation *(OPTIONAL — DISABLED BY DEFAULT, §62)*
+• Visual validation *(optional, disabled initially)*
 • Compliance verification
 
 Objectives SHALL determine execution strategy.
@@ -538,13 +526,9 @@ Minimum supported dimensions include:
 • Component Coverage
 • API Coverage
 • Role Coverage
-• Visual Coverage *(OPTIONAL — DISABLED BY DEFAULT, §62)*
+• Visual Coverage *(optional, disabled initially)*
 • Data Coverage
 • Risk Coverage
-• Exploration Coverage — reachable, in-scope surfaces explored within the
-  configured budget, with every unreached surface carrying a reason
-  (`inaccessible · blocked · capped · excluded · unavailable state ·
-  unavailable credentials`)
 
 No single coverage metric SHALL represent overall quality.
 
@@ -819,34 +803,21 @@ Session-related findings SHALL be reported independently from authentication fin
 
 # 32. Browser Strategy
 
-**Chromium only (W8).** Cross-browser testing is not a qa-automation
-responsibility (§65). The Browser Planning Engine (`05` §27) remains the planning
-owner and the Execution Engine (`07`) remains the runtime authority; the
-supported set is Chromium.
+Browser execution is **Chromium-only** for the Site Explorer. Cross-browser
+suites and browser-specific matrices (Firefox/WebKit) are **out of scope**
+(cross-browser testing removed).
 
-The framework MAY execute:
-
-• Headless execution (default)
-• Headed execution for manual observation (`PLAYBOOK` §17)
-• Browser-specific retries within Chromium
-
-A browser project SHALL NEVER be declared unless it is actually executed — a
-declared-but-unrun project misrepresents scope.
+Browser allocation SHALL prioritize meaningful coverage over unnecessary duplication.
 
 ---
 
-# 33. Device Strategy
+# 33. Device Strategy *(removed)*
 
-**Single default viewport (W8).** Responsive and device-matrix testing are not
-qa-automation responsibilities (§61, §66). Execution runs at the configured
-default desktop viewport (`01` §29).
-
-Device emulation remains an **OPTIONAL — DISABLED BY DEFAULT** capability of the
-underlying tool; the framework does not plan, generate, or execute a device
-matrix, and SHALL NEVER report an unrun viewport as covered.
-
-Native mobile application automation remains a non-goal (`01` §2) and a future
-capability (`01` §35).
+> **Removed — out of scope for the RedOps Site Explorer.** Device/responsive
+> validation (desktop/tablet/mobile emulation and the responsive coverage
+> dimension) is removed. Native mobile application automation remains a non-goal
+> (`01` §2) and a future capability (`01` §35). Section number retained to
+> preserve cross-references.
 
 ---
 
@@ -1092,8 +1063,7 @@ occur at runtime.
 
 # 44. CRUD Strategy
 
-Every business entity SHALL be **evaluated** — that is, discovered and recorded —
-for:
+Every business entity SHALL be evaluated for:
 
 Create
 
@@ -1101,7 +1071,7 @@ Read
 
 Update
 
-Delete *(discovery only — see below)*
+Delete
 
 Search
 
@@ -1120,24 +1090,6 @@ Restore
 Where supported.
 
 The framework SHALL identify unsupported operations explicitly.
-
-## Delete is not a test category (W8 / C9)
-
-Discovery MAY record that delete functionality exists, where it is exposed, and
-what it appears to act on. That is a factual observation and is retained.
-
-Generation SHALL NOT emit an application-delete test, and execution SHALL NOT
-invoke an application delete action. Discovered delete affordances are recorded
-with the reason `excluded` in the exploration disclosure (`09`).
-
-**Cleanup is not Delete.** A test that creates synthetic data SHALL still remove
-**its own** synthetic data afterwards (`PLAYBOOK` §6). That obligation SHALL NOT
-be reported as CRUD-Delete coverage, and SHALL NEVER remove data the test did not
-create.
-
-State-mutating tests of any kind additionally require `ALLOW_WRITE_TESTS`,
-synthetic data, mandatory cleanup, scope + RoE, and disclosed mutation
-(W7-A BD-W7-3).
 
 ---
 
@@ -1261,38 +1213,27 @@ Authentication SHALL be validated across supported mechanisms.
 
 ---
 
-# 49. Role-Based Access Validation *(functional)*
+# 49. Authorization Validation
 
-> **W8 restatement.** This section verifies that the application's **documented
-> role behaviour** works as specified. It is functional QA under category 5
-> (Authentication). It is **not** access-control security testing, and its
-> results SHALL NEVER be reported as security coverage or as a security finding.
+Authorization SHALL verify permission boundaries.
 
-Validation SHALL verify that, for each role whose credentials were supplied, the
-application behaves as its own specification describes:
+Validation SHALL include:
 
-• Menu visibility matches the role
+• Menu visibility
 
-• Page access matches the role
+• API authorization
 
-• Action availability matches the role
+• Page authorization
 
-• API responses for the role are consistent with the UI it is shown
+• Object ownership
 
-• Role inheritance behaves as documented
+• Action permissions
 
-**Deviation handling.** A role behaving differently from its documented
-behaviour is recorded as a **target defect** and classified through the existing
-failure-classification authority (`08` §16, `01` §23) — target defect, suite
-defect, or environment artifact.
+• Role inheritance
 
-The framework SHALL NEVER label such a deviation a vulnerability, assign it a
-severity or CVSS, or recommend a security skill. A separately selected security
-skill reads this evidence and determines its own methodology.
-
-**No bypass.** Authorization boundaries are never circumvented, forced, or
-brute-forced to produce a result (`01` §2, `03` §36). Roles whose credentials
-were not supplied are recorded `unavailable credentials`, never inferred.
+Unauthorized access SHALL always be reported as an **authorization / RBAC defect**
+(a functional QA finding) — never as a security vulnerability claim. Security
+assessment is owned by the Skillmatrix security skills.
 
 ---
 
@@ -1356,7 +1297,7 @@ Validation SHALL include:
 
 • Error handling
 
-• Response timing (observed, not budgeted)
+• Performance
 
 • Rate limiting
 
@@ -1442,6 +1383,8 @@ Validation SHALL include:
 
 • Pagination
 
+• Performance
+
 • Result accuracy
 
 Search SHALL be evaluated for both usability and correctness.
@@ -1493,6 +1436,8 @@ Validation SHALL include:
 • Total count
 
 • Boundary conditions
+
+• Performance
 
 Pagination SHALL preserve data integrity.
 
@@ -1580,44 +1525,30 @@ Validation SHALL include:
 
 • Formatting
 
+• Performance
+
 Reports SHALL match the underlying application state.
 
 ---
 
-# 60. REMOVED — W8. Not a qa-automation responsibility.
+# 60. Accessibility Validation *(removed)*
 
-Formerly "Accessibility Validation" (keyboard navigation, focus order, ARIA
-usage, labels, contrast, heading hierarchy, landmark regions, alternative text as
-a compliance activity).
-
-Accessibility **testing and WCAG compliance** are outside this skill.
-Accessibility **semantics are retained** — ARIA, role, label and accessible name
-remain first-class discovery metadata (`03` §7) because the locator layer
-(`06` §26) and self-healing (`08`) depend on them. Retaining the semantics is not
-retaining the testing.
-
-Section number retained; existing cross-references to `16` §60 resolve here (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Accessibility testing (keyboard, focus order, ARIA, labels, contrast, heading hierarchy, landmarks, alt text) and axe-core are removed. Section
+> number retained (not renumbered) to preserve cross-references.
 
 ---
 
-# 61. REMOVED — W8. Not a qa-automation responsibility.
+# 61. Responsive Design Validation *(removed)*
 
-Formerly "Responsive Design Validation" (desktop/laptop/tablet/mobile layout
-integrity across viewports).
-
-Responsive testing is outside this skill. Execution runs at the single default
-viewport (§33).
-
-Section number retained (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Responsive / multi-layout validation (desktop/laptop/tablet/mobile) is removed. Section
+> number retained (not renumbered) to preserve cross-references.
 
 ---
 
-# 62. Visual Validation
+# 62. Visual Validation *(optional — disabled initially)*
 
-> **OPTIONAL — DISABLED BY DEFAULT (W8 / C6).** Visual validation runs only when
-> explicitly enabled by configuration (`01` §29). **No visual baseline is
-> generated automatically.** When disabled, the framework produces no visual
-> result and reports the category as not run, never as passed.
+> **Optional, disabled initially.** Visual validation is retained as an
+> optional Site Explorer category, disabled by default; enable it explicitly.
 
 Visual validation SHALL compare rendered interfaces against expected presentation.
 
@@ -1643,67 +1574,31 @@ Visual findings SHALL remain independent from functional findings.
 
 ---
 
-# 63. REMOVED — W8. Not a qa-automation responsibility.
+# 63. Performance Validation *(removed)*
 
-Formerly "Performance Validation" (page load, API latency, rendering, LCP,
-interaction delay measured as a testing activity).
-
-Performance testing is outside this skill.
-
-**Retained elsewhere:** request/response *timing* remains a factual observation
-in the API capture model (`PLAYBOOK` §21), and framework execution telemetry
-remains owned by `07`, `09` §23 and `10` §18. Neither is judged against a budget,
-and neither is a performance test.
-
-Section number retained (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Performance testing (page load, LCP, API latency, network timing, Lighthouse) is removed. Section
+> number retained (not renumbered) to preserve cross-references.
 
 ---
 
-# 64. REMOVED — W8. Not a qa-automation responsibility.
+# 64. Security Validation *(removed)*
 
-Formerly "Security Validation" (authentication, authorization, session
-management, input validation, output encoding, security headers, cookie
-security, transport security, file handling, API security as security-assessment
-categories, plus the active-scanning clause).
-
-**Security testing, passive security scanning and offensive testing are outside
-this skill at every tier.** This skill records factual observations only; a
-separately selected security skill reads that evidence and determines its own
-methodology (`01` §2, `Architecture_Ownership_Matrix.md`).
-
-**Retained elsewhere, as functional QA:** login/logout/session-timeout/session-
-transition behaviour (§48), role-based access to application features (§49–§50),
-and form input validation behaviour (§41, §43). These verify that the application
-behaves as specified — they do not assess its security posture, and they SHALL
-NEVER be reported as security coverage.
-
-**Retained as governance, not testing:** secret masking, credential handling,
-scope enforcement, Rules of Engagement enforcement and evidence protection
-(`01` §30, `07` §41, `03` §36).
-
-Section number retained (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Security testing — passive or active scanning, security headers, input/output security, transport/API security, penetration testing — is owned exclusively by the Skillmatrix security skills, never by qa-automation. Section
+> number retained (not renumbered) to preserve cross-references.
 
 ---
 
-# 65. REMOVED — W8. Not a qa-automation responsibility.
+# 65. Browser Compatibility Validation *(removed)*
 
-Formerly "Browser Compatibility Validation" (Chromium/Firefox/WebKit matrices,
-full/smoke/representative suite allocation).
-
-Cross-browser testing is outside this skill. Execution is Chromium-only (§32).
-
-Section number retained (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Chromium is the only supported browser; Firefox/WebKit compatibility validation is removed (cross-browser testing removed). Section
+> number retained (not renumbered) to preserve cross-references.
 
 ---
 
-# 66. REMOVED — W8. Not a qa-automation responsibility.
+# 66. Cross-Platform Validation *(removed)*
 
-Formerly "Cross-Platform Validation" (Windows/Linux/macOS/Android/iOS browser
-automation).
-
-Cross-platform testing is outside this skill.
-
-Section number retained (C4).
+> **Removed — out of scope for the RedOps Site Explorer.** Cross-platform / cross-OS validation (Windows/Linux/macOS/Android/iOS) is removed. Section
+> number retained (not renumbered) to preserve cross-references.
 
 ---
 
@@ -1789,7 +1684,7 @@ It establishes standardized strategies for:
 
 • APIs
 
-• Visual validation *(OPTIONAL — DISABLED BY DEFAULT, §62)*
+• Visual validation *(optional, disabled initially)*
 
 • Third-party integrations
 
@@ -2229,8 +2124,6 @@ The framework SHALL identify gaps across:
 
 • Roles
 
-• Unreached surfaces, each with its recorded reason
-
 Coverage gaps SHALL be classified as:
 
 Covered
@@ -2660,8 +2553,6 @@ Examples include:
 
 • NIST
 
-• OWASP
-
 • PCI DSS
 
 • HIPAA
@@ -2757,7 +2648,8 @@ The framework SHALL NOT intentionally:
 
 • Exceed approved permissions
 
-The framework SHALL NOT perform security scanning of any kind (§64).
+Security testing (passive or active scanning included) is **out of scope for
+qa-automation** and is owned exclusively by the Skillmatrix security skills.
 Penetration testing and production exploitation remain non-goals (`01` §2).
 
 ---

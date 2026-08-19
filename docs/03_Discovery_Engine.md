@@ -4,22 +4,13 @@
 
 **Document:** 03_Discovery_Engine.md
 
-**Version:** 4.1
+**Version:** 3.0
 
 **Status:** Draft
 
 **Depends On:** 01_Master_Architecture.md
 
 **Controlled By:** 02_Decision_Engine.md
-
----
-
-# Revision History
-
-| Version | Description |
-| ------- | ----------- |
-| 3.0     | Discovery Engine: crawl, routes, navigation, components, API, authentication, storage, runtime observation, normalization (§18), validation, persistence, audit |
-| 4.1     | **W8 — Site Explorer boundary.** §7 "Accessibility Discovery" renamed "Semantic & Role Metadata Discovery" — the metadata is **retained** as locator and self-healing evidence, only the compliance framing is removed (C7). §13 Non-Goals extended with the security-interpretation boundary. Deep-discovery sources (robots, sitemap, JavaScript routes, GraphQL, hidden endpoints, route templates, masked API capture, provenance, state ladder, determinism) cross-referenced to `IMPLEMENTATION_PLAYBOOK` §21, which remains their tactical owner. §18 URL normalization is **unchanged** and remains the sole normalizer. |
 
 ---
 
@@ -99,7 +90,7 @@ The Discovery Engine is responsible for discovering:
 - Network activity
 - Business workflows
 - Client-side technologies
-- Semantic and role metadata (ARIA, role, label, accessible name)
+- Accessibility metadata
 - Feature flags (when detectable)
 
 The Discovery Engine SHALL NOT generate Playwright code.
@@ -196,7 +187,13 @@ Additional principles include:
 
 ## 5.1 Observe Before Acting
 
-Discovery is observational.
+Discovery is read-only.
+
+It MAY navigate and activate navigation disclosures (menus, tabs, expanders),
+because many applications render navigation only on activation and a link-only
+crawl silently misses most of the application. It MUST NOT submit a form, and
+MUST NOT activate a control whose accessible name matches destructive or
+write intent.
 
 It must never modify application data unless explicitly configured.
 
@@ -427,55 +424,25 @@ Spring
 
 ---
 
-## Semantic & Role Metadata Discovery
+## Accessible Locator Metadata
 
-> **W8 / C7.** This is **locator and self-healing evidence**, not accessibility
-> testing. The metadata below is what `06` §26 resolves locators against
-> (`getByRole`, `getByLabel`) and what the Healing Candidate Score consumes
-> (`08` — Accessibility Match term, unchanged). Accessibility/WCAG **compliance
-> testing** was removed in W8 (`16` §60); this metadata was **not**.
+Captured for locator and component identification (Playwright `getByRole` /
+accessible-name locators) and structural understanding — **not** for accessibility
+testing, which is out of scope for the Site Explorer.
 
 Examples
 
-ARIA attributes
+ARIA
 
 Roles
 
 Labels
 
-Accessible names
-
 Landmarks
 
-Discovery records this metadata as observed. It SHALL NOT evaluate it against
-WCAG or any accessibility standard, and SHALL NOT emit an accessibility finding.
+Heading Structure
 
----
-
-## Deep Discovery Sources
-
-The following sources are in scope for discovery. Their tactical procedure —
-including provenance, route templates, deterministic deduplication, no-re-crawl,
-masked request/response capture, the W7-B state ladder, explicit absence and
-determinism — is specified in **`IMPLEMENTATION_PLAYBOOK` §21**, which remains
-their owner. This engine consumes that procedure; it does not restate it.
-
-| Source | Recorded as |
-|---|---|
-| Page and link crawl | `discoverySource=crawl` |
-| Routes and dynamic route templates | `discoverySource=crawl` / `js` |
-| `robots.txt` | `discoverySource=robots` — a `Disallow` is intelligence, **never** a bypass grant |
-| `sitemap.xml` | `discoverySource=sitemap` |
-| JavaScript routes | `discoverySource=js` — a string in JS is **not** executable proof |
-| GraphQL endpoints | `discoverySource=js` / `network` |
-| Hidden / non-page-linked endpoints | recorded with provenance, `DISCOVERED`, never auto-exercised |
-| Forms, inputs, parameters | `discoverySource=crawl` |
-| Authentication surfaces | `discoverySource=crawl` (§23) |
-| Network / API observation | `discoverySource=network` — `OBSERVED` |
-
-Each record is a **factual observation**. This engine SHALL NEVER derive from it
-an attack class, a vulnerability claim, a security-skill routing suggestion, or a
-probability that a surface is exploitable (`01` §2.1).
+Focus Order
 
 ---
 
@@ -700,19 +667,9 @@ Modify business data
 
 Perform penetration testing
 
-Perform security testing or security scanning of any kind
-
-Perform accessibility, performance, responsive, or cross-browser testing
-
 Perform load testing
 
 Perform destructive actions
-
-Delete application data (delete affordances are discovered, never exercised —
-`16` §44)
-
-Conclude that a surface is vulnerable, that an attack class applies to it, or
-that a security skill should be run against it (`01` §2.1)
 
 Generate reports
 
@@ -733,7 +690,7 @@ application into structured engineering knowledge.
 
 It discovers routes, pages, navigation, components, APIs, storage,
 authentication, technologies, and runtime behavior while remaining
-strictly observational.
+strictly read-only (navigation and disclosure activation only).
 
 Its outputs become the foundation for the Knowledge Graph and all
 subsequent planning and test generation.
@@ -1484,24 +1441,6 @@ Confidence
 
 ---
 
-## Exploration Modes (W8)
-
-Authentication discovery runs in both modes. The mode determines **what is
-reachable**, never whether the run is permitted.
-
-| Mode | Credentials / session | Discovery behaviour |
-|---|---|---|
-| **Unauthenticated Exploration** | none supplied | Detects login pages, session cookies, token storage, OAuth/OIDC/SSO and MFA indicators, and marks protected routes. Detection never requires logging in. |
-| **Authenticated Exploration** | supplied via environment | Additionally explores the authenticated surfaces reachable by that account. |
-
-**Authentication mode is not authorization.** Scope and Rules of Engagement are
-mandatory in both modes (`01` §30, `01` §2.3). Protected routes that could not be
-reached because credentials were not supplied are recorded `unavailable
-credentials` — never guessed at, never counted as covered, never reported as a
-defect.
-
----
-
 ## Principles
 
 The engine SHALL NEVER:
@@ -1513,10 +1452,6 @@ Guess credentials.
 Brute-force accounts.
 
 Modify authentication state.
-
-Test the strength, correctness, or security of an authentication mechanism —
-that is security assessment, which is outside this framework (`01` §2). It
-records **that** a mechanism exists and how it is configured, as observed.
 
 ---
 
@@ -1568,8 +1503,7 @@ Expiration
 
 Origin
 
-Cookie attributes as observed (`Secure`, `HttpOnly`, `SameSite`) — recorded as
-factual storage metadata, never evaluated as a security posture
+Security Attributes
 
 Observed Usage
 
@@ -1670,10 +1604,7 @@ dom-events.json
 
 mutation-report.json
 
-performance-events.json — **timing observations only.** Factual navigation and
-resource timing, retained because the API capture model (`PLAYBOOK` §21) records
-request/response timing. It is never judged against a budget and is not a
-performance test (`16` §63).
+performance-events.json
 
 dynamic-components.json
 
@@ -2339,7 +2270,11 @@ Discovery shall terminate safely.
 
 # 36. Discovery Security Rules
 
-Discovery SHALL remain observational by default.
+Discovery SHALL remain read-only by default: navigation and disclosure
+activation are permitted; form submission and destructive/write-intent controls
+are not. Discovery SHALL be depth-first and exhaustive — no URL cap, no
+per-category cap, no truncation. Any item not explored SHALL be recorded as a
+coverage-ledger exclusion with a reason, never omitted silently.
 
 The engine SHALL NOT:
 
@@ -2493,7 +2428,7 @@ Its outputs are deterministic, validated, versioned, auditable, and
 consumed by the Knowledge Graph, enabling intelligent planning,
 generation, execution, and continuous learning.
 
-Discovery is observational, safe by default, and governed by the
+Discovery is read-only, safe by default, and governed by the
 Decision Engine.
 
 ---

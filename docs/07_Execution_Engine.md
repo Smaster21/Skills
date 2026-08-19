@@ -4,16 +4,9 @@
 
 **Document:** 07_Execution_Engine.md
 
-**Version:** 4.1
+**Version:** 3.0
 
 **Status:** Draft
-
-> **Revision 4.1 — W8, Site Explorer boundary.** Supported browsers reduced to
-> Chromium; accessibility test worker examples replaced. §41 Execution Security
-> is **governance only** — masking, credential handling, evidence protection —
-> and is unchanged. Runtime authority, browser lifecycle, worker scheduling,
-> timeouts, retry, trace/screenshot/video capture and auth-state preservation are
-> **unchanged**.
 
 **Depends On:**
 
@@ -980,14 +973,8 @@ Collect Browser Metadata
 
 ## Supported Browsers
 
-Chromium
-
-> **W8.** Firefox, WebKit, Microsoft Edge and Google Chrome were withdrawn.
-> Cross-browser testing is not a qa-automation responsibility (`01` §2,
-> `05` §27, `16` §65). A browser project SHALL NEVER be declared unless it is
-> actually executed.
-
-Mobile Emulation
+Chromium *(only — Firefox, WebKit, Edge, Chrome and mobile emulation are out of
+scope: cross-browser and responsive testing removed)*
 
 Future browser adapters
 
@@ -1315,7 +1302,7 @@ Worker-3
 API Tests
 
 Worker-4
-Forms Tests
+UI Tests
 ```
 
 ---
@@ -1363,11 +1350,9 @@ The Browser Manager shall:
 
 The framework shall support:
 
-- Chromium
-
-Firefox, WebKit and Edge were withdrawn in W8 (`01` §2). Mobile, cloud and
-remote browsers remain future capabilities (`01` §35), not current ones, and
-SHALL NOT be declared as projects.
+- Chromium *(only — cross-browser and mobile/responsive testing removed)*
+- Cloud Browsers
+- Remote Browsers
 
 ---
 
@@ -1599,7 +1584,7 @@ Worker-3
 API Tests
 
 Worker-4
-Navigation
+UI
 ```
 
 ---
@@ -2363,10 +2348,6 @@ until every mandatory quality gate passes.
 
 # 41. Execution Security
 
-> **Governance only (W8 / C5).** Secret masking, credential handling, scope
-> enforcement, Rules of Engagement enforcement and evidence protection. This
-> engine performs **no** security testing or security scanning of the target.
-
 ## Security Principles
 
 The Execution Engine SHALL protect sensitive data.
@@ -2412,7 +2393,6 @@ The engine shall:
 The Execution Engine SHALL support:
 
 - Parallel Execution
-- Multi-Browser
 - Multi-Environment
 - CI/CD Integration
 - Distributed Execution (Future)

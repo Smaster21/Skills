@@ -2,21 +2,17 @@
 
 > You received this as `SKILL_FILES`. Follow it directly. You have `OUTPUT_DIR`,
 > `TARGET` (or `TARGET_DOMAIN` / `BASE_URL`), and `CHAIN_CONTEXT`. This is the
-> minimal executor playbook: scope → discover → plan → generate → execute →
-> report. Deeper contracts are referenced inline but you do not need them to run.
+> minimal executor playbook: scope → profile → discover → verify → plan →
+> generate → execute → report. Deeper contracts are referenced inline but you do not need them to run.
 
-This skill is the **Site Explorer** backend. It explores and verifies; it never
-exploits, brute-forces, or bypasses authentication, and it never assesses
-security. Discovery is observational.
+This skill is **defensive QA**. It never exploits, brute-forces, or bypasses
+authentication. Discovery is **read-only**: it navigates and opens navigation
+menus, but never submits a form and never activates a destructive control.
 
-**Exploration guarantee.** Never claim 100% or "every page". You guarantee *all
-reachable, in-scope surfaces within the configured budget*. Every
-discovered-but-not-reached surface gets exactly one reason: `inaccessible ·
-blocked · capped · excluded · unavailable state · unavailable credentials`.
-
-**Exploration mode.** `TEST_USER`/`TEST_PASS` present → **Authenticated
-Exploration**; absent → **Unauthenticated Exploration**. Neither is
-authorization — the scope check in §1 is mandatory in both.
+Three rules override convenience everywhere below:
+**(1)** no application-specific selector is ever hand-written;
+**(2)** nothing is capped and nothing is silently dropped;
+**(3)** a case binds to a locator matching its *intent*, or it is dropped.
 
 ## 0. Resolve inputs
 
@@ -24,13 +20,19 @@ authorization — the scope check in §1 is mandatory in both.
 BASE_URL="${BASE_URL:-$TARGET}"                 # full URL to the app entry point
 [ -z "$BASE_URL" ] && { echo "[ABORT] no BASE_URL/TARGET"; exit 2; }
 QA_OUT="$OUTPUT_DIR/qa"
-mkdir -p "$QA_OUT"/{discovery,knowledge,planning,tests,pages,fixtures,decision-history,execution-history,reports,raw}
-mkdir -p "$QA_OUT"/aic/evidence/{requests,responses,screenshots}
+# Run isolation is at the ./output/ boundary — one output root per run.
+mkdir -p "$QA_OUT"/{report,discovery,network,knowledge,planning,coverage,diagnostics,raw} \
+         "$QA_OUT"/tests/{generated,pages,fixtures} \
+         "$QA_OUT"/execution \
+         "$QA_OUT"/evidence/{tests,screenshots,traces,videos,network,raw}
+
+# One artifact, one category. Stable IDs (PAGE-/ROUTE-/API-/WF-/TC-/EVID-) are the
+# join keys; every model item declares observed | inferred | generated.
+# QA output only — no security findings, CVSS, or security coverage anywhere.
 # Credentials are OPTIONAL — absence narrows scope, it does not stop the run.
-#   TEST_USER / TEST_PASS   → Authenticated Exploration
-#   ALLOW_WRITE_TESTS=1     → permits state-mutating tests (synthetic data +
-#                             mandatory cleanup + disclosed mutation). Never
-#                             enables application-delete tests.
+#   TEST_USER / TEST_PASS supplied  → Authenticated Exploration
+#   TEST_USER / TEST_PASS absent    → Unauthenticated Exploration
+# (Authorization/scope governance is mandatory in BOTH modes — see step 1.)
 ```
 
 ## 1. Scope check — before ANY navigation
@@ -52,7 +54,7 @@ fi
 ## 2. Scaffold + install (Chromium only)
 
 ```bash
-cd "$QA_OUT"
+cd "$QA_OUT/tests"          # dependencies live with the suite, not with the evidence
 npm init -y >/dev/null
 npm i -D @playwright/test typescript @types/node >/dev/null
 npx playwright install chromium        # NO --with-deps, NO sudo
@@ -61,109 +63,69 @@ npx playwright install chromium        # NO --with-deps, NO sudo
 Expected: `chromium` present under the Playwright cache; no system packages
 touched.
 
-## 3. Explore (Phase 1) — observational
+## 3–4. Profile the target, then discover
 
-Drive Chromium over the in-scope surface. Discovery sources — all of them, each
-tagged with `provenance.discoverySource` (`PLAYBOOK` §21):
+Profile before crawling — measure the target's own conventions — then crawl
+**depth-first and exhaustively**, expanding navigation disclosures where
+profiling showed they reveal routes. Read-only; caps come from configuration
+only. Full steps and expected artifacts: **`discovery-profiling.md`**.
 
-| Source | Notes |
-|---|---|
-| page/link crawl | BFS within caps, same-origin or `SCOPE_FILE` hosts |
-| routes + dynamic route templates | collapse `/users/123` → `/users/{id}` |
-| `robots.txt` | parse; a `Disallow` is intelligence — **record it, never crawl it** |
-| `sitemap.xml` | parse `<loc>` routes |
-| JavaScript routes | route/API strings in already-loaded JS; a string is **not** proof |
-| GraphQL endpoints | indicators in JS and network |
-| hidden endpoints | discovered from js/sitemap/robots and **not** page-linked — record, never auto-exercise |
-| forms · inputs · parameters | component extraction |
-| authentication surfaces | login pages, session cookies, token storage, OAuth/OIDC/SSO, MFA indicators |
-| network/API capture | every XHR/fetch witnessed → masked request + response evidence |
+## 5. Verify locators (Phase 3) — no unverified locator reaches generation
 
-Per page: navigate, `networkidle`, screenshot, extract components, capture
-XHR/fetch, record auth indicators.
-
-**Three non-negotiables:**
-
-1. **Mask before persistence.** Sensitive header/body names *and* value shapes
-   (Bearer, JWT, `AKIA…`, `sk_live_…`, high entropy) → `masked`. JSON/form bodies
-   → `redacted`. Binary → `binary` repr (contentType + size + sha256, never raw).
-   Unknown sensitivity defaults to `masked`.
-2. **Deduplicate.** Deterministic identity per surface. Revisit only for a
-   recorded reason: distinct state · distinct auth context · workflow transition
-   · validation · authorized re-discovery.
-3. **Record every unreached surface** with exactly one reason.
-
-State ladder: `DISCOVERED → OBSERVED → EXERCISED → VALIDATED`. **Never emit
-`OFFENSIVELY_VALIDATED` or `VULNERABILITY_CONFIRMED`** — they are not yours.
-
-Write:
+Probe every candidate live, **in the auth state its test will run in**, using the
+strategy ladder (testid → role+name → label → name/id → **label-scoped** →
+placeholder → text). Keep only `matchCount === 1`.
 
 ```
-qa/discovery/discovery-report.json     # pages, network, auth, unreached (each with a reason)
-qa/discovery/component-inventory.json  # UNVERIFIED locator candidates
-qa/aic/{pages,routes,apis,api-calls,forms,parameters,auth-surfaces,robots,javascript-routes,relationships}.json
-qa/aic/evidence/{requests,responses}/*.json   # masked
-qa/raw/discovery-screenshots/*.png
+qa/discovery/verified-inventory.json
+qa/discovery/assertion-target-probes.json
 ```
 
-Expected: every visited page with HTTP status and load time; a candidate
-inventory marked `verified:false`; `attack-surface` absent or `NOT_PRODUCED`. A
-cap is fine — record what was skipped, never hide it.
+For candidates pruned as ambiguous, retry **label-scoped** (find the field group
+by its label, then the control inside it) before giving up — that single strategy
+recovers most repeated-placeholder fields. Assertion targets are probed in their
+**triggered** state, never assumed.
 
-**Record facts, never conclusions.** "A parameter exists" ✅. "This parameter is
-injectable" ❌ — that is the security skill's call, not yours.
+## 6. Plan (Phase 4) — workflows, intent-bound, fully ledgered
 
-## 4. Verify locators (Phase 3) — no unverified locator reaches generation
+Derive coverage across every declared area, then bind each case to verified
+locators **by intent**:
 
-Probe every candidate live, **in the auth state its test will run in** (public
-page → clean context; authenticated page → logged-in context). Keep only
-candidates that resolve to the expected count.
+> If no verified locator's accessible name matches the case's stated target,
+> **drop the case** and record `NO_INTENT_MATCH` in the ledger. Never fall back to
+> "the first verified control on the route" — that produces a test that passes
+> while driving the wrong element.
+
+Form cases are **workflows**, not presence checks:
 
 ```
-qa/discovery/verified-inventory.json   # probed → verified/pruned, matchCount per candidate
+populate every verified field (click-then-pick for custom widgets,
+selectOption only for native <select>)
+  → submit
+  → assert the resulting state changed as expected
+  → reset where offered, assert it cleared
 ```
 
-Expected: each kept candidate has `matchCount == 1`; pruned candidates are
-recorded with their failing count. Assertion-target elements (error banners,
-validation messages) are probed in their *triggered* state — never assumed.
-
-## 5. Plan (Phase 4) + decisions
-
-Derive coverage, workflows and risk-ordered test cases across the ten QA
-categories — smoke · functional · UI · forms · authentication · navigation · API,
-plus dashboard/table/visual **only if explicitly enabled**. Browser matrix is
-**chromium**, full stop.
-
-Functional = positive · boundary · business-rule · **CRUD except Delete** ·
-state-transition. Never plan a delete test, an accessibility/WCAG check, a
-performance budget, a viewport matrix, or any security test.
-
-Emit the plan and the decision records — every decision carries measured
-evidence (see `evidence-and-confidence.md`).
+Also plan `business-rule` cases from validation messages captured in their
+triggered state, and `CRUD-except-Delete` where the environment permits writes —
+if it does not, that is a `POLICY_EXCLUDED` ledger entry **with its consequence
+stated**, not an omission.
 
 ```
 qa/planning/test-plan.json
-qa/decision-history/decision-000N.json
+qa/raw/decision-history.jsonl → decision-000N.json
+qa/coverage/ + qa/diagnostics/coverage-ledger.json    ← every population accounted, unaccounted = 0
 ```
 
-## 6. Generate (Phase 5) + validate (Phase 6)
+## 6b. Generate (Phase 5) + validate (Phase 6)
 
-Generate Page Objects, fixtures, and specs **only** from verified locators.
-
-**Never generate:** SQL injection, XSS, SSRF, IDOR, command-injection or
-traversal tests · attack-shaped input payloads · application-delete tests ·
-accessibility/performance/responsive/cross-browser tests. A test that creates
-synthetic data still cleans up **its own** data in `afterEach` — that is cleanup,
-not a Delete test.
-
-Then gate:
+Generate Page Objects, fixtures and specs **only** from verified locators, using
+the profile's shell facts **per route** (never one route's anchor applied
+globally). Then gate:
 
 ```bash
 npx tsc --noEmit          # FAIL stops — poor automation never executes
 ```
-
-Expected: `tsc` clean; a validation report with gate `PASS` (WARNING may
-proceed, FAIL stops).
 
 ## 7. Execute (Phase 7) — Chromium only
 
@@ -172,25 +134,26 @@ BASE_URL="$BASE_URL" npx playwright test --project=chromium
 ```
 
 Expected: a real pass/fail result. A failure is triaged, not hidden — classify
-before any healing (`08` §16): `LOCATOR` may heal; `ASSERTION` / business-rule /
+before any healing (`08` §16): `LOCATOR` may heal; `ASSERTION` / business /
 auth / environment may **not**.
-
-A failed QA test is a **target defect, suite defect, or environment artifact**.
-It is NEVER a security finding, and it never earns a severity or a CVSS score.
 
 ## 8. Report (Phase 10)
 
 Aggregate per test (never per attempt). Reconcile every number against
-`qa/reports/results.json`. Disclose skipped scope, degraded/absent optional
-engines, and every gap.
-
-**The Exploration Disclosure is mandatory** (`09` §12A): exploration mode
-(Authenticated/Unauthenticated), the configured budget and whether any cap was
-hit, every unreached surface with its reason, every revisit with its reason, and
-which optional categories did not run.
+`qa/execution/results.json`. Write `summary.json` carrying the verdict **and
+its qualifiers together**, then write `qa/run.json`, `qa/README.md`, and
+`qa/report/final-report.{md,json}`. **Publish the coverage ledger beside the pass counts** —
+discovered / tested / excluded per population, plus verified-but-unused. A pass
+count describes the suite; only the ledger describes the application
+(`coverage-ledger.md`). Disclose skipped scope, degraded/absent optional engines,
+and every gap.
 
 ```
-qa/reports/{results.json,results.xml,html/,diagnostics.json,rw-report.md}
+qa/summary.json                      ← the single file to read first
+qa/execution/{results.json,results.xml,html/}
+qa/coverage/ + qa/diagnostics/{diagnostics.json,coverage-ledger.json,target-health.json,analytics.json}
+qa/report/{final-report.md,final-report.json}   ← the deliverable
+qa/run.json  qa/summary.json  qa/README.md
 ```
 
 Emit the evidence chain in the decision records: per-item confidence →
@@ -199,20 +162,22 @@ Emit the evidence chain in the decision records: per-item confidence →
 
 ## Checkpoints worth noting (the executor logs these)
 
-- Discovery complete: N pages, M candidates, K skipped (+ cap).
+- Profile complete: shell landmarks, label coverage ratio, choice-control style.
+- Discovery complete: N pages (max depth D), M candidates, K skipped **with reasons**.
 - Phase-3 gate: candidates verified / pruned.
 - Validation gate: PASS / WARNING / FAIL.
 - Execution: passed / failed / skipped, reconciled against the runner.
+- Ledger: discovered / tested / excluded per population; `unaccounted` MUST be 0.
+- Verified-but-unused count (high = the planner, not discovery, is the bottleneck).
 - Any target defect vs suite defect vs environment artifact.
 
 ## Never
 
 - Never run against an out-of-scope or unauthorized target.
 - Never fabricate a result, a locator, or a confidence value.
-- Never present a capped or credential-limited run as complete.
-- Never claim 100% coverage or that "every page" was explored.
+- Never cap anything — no URL cap, no per-category cap, no `slice(n)`. A limit is
+  a declared exclusion with a reason, or it does not happen.
+- Never hand-write an application-specific selector, class, URL prefix or literal.
+- Never bind a case to a locator that does not match its stated intent.
+- Never present a single-browser run, or one with unaccounted artifacts, as complete.
 - Never `sudo`, `install-deps`, or modify the host environment.
-- Never conclude that a surface is vulnerable, that an attack class applies to
-  it, or that a security skill should be run against it.
-- Never emit `OFFENSIVELY_VALIDATED` or `VULNERABILITY_CONFIRMED`.
-- Never persist a raw secret.

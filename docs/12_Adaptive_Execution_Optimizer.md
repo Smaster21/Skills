@@ -5,15 +5,9 @@
 
 **Document:** 12_Adaptive_Execution_Optimizer.md
 
-**Version:** 4.1
+**Version:** 4.0
 
 **Status:** Draft
-
-> **Revision 4.1 — W8, Site Explorer boundary.** One batching example updated
-> (Accessibility is no longer a category). Historical/browser execution
-> performance, batch planning, runtime prediction, advisory-by-construction and
-> §31 governance are **unchanged** — they concern framework execution, not target
-> performance testing.
 
 **Depends On:**
 

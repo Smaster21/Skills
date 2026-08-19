@@ -7,8 +7,6 @@ I'll explain it the same way you could explain it to your seniors.
 
 # What is this Skill?
 
-**This is the backend methodology for the RedOps Site Explorer.**
-
 Imagine hiring a **Senior QA Automation Engineer with 15+ years of experience**.
 
 Now imagine that engineer never gets tired, always follows the same standards, learns from previous executions, generates automation automatically, and produces enterprise-grade reports.
@@ -22,33 +20,7 @@ It is **not**:
 * an AI chatbot
 * a test case generator
 
-It is an **AI-driven QA Engineering Framework** — and, in RedOps, the engine
-behind the Site Explorer.
-
-## What it is *not* responsible for
-
-**Security assessment.** This skill discovers and verifies. It never decides
-that something is vulnerable, never suggests which security skill to run, and
-never produces a finding.
-
-```
-qa-automation (Site Explorer)         then, separately:
-─────────────────────────────         ────────────────────────────────────
-Discovery                             User selects a security skill
-  → Application understanding           → RedOps mounts it
-  → QA test planning                    → It reads Site Explorer evidence
-  → QA test generation                  → It picks its own targets
-  → Playwright execution                → It picks its own methodology
-  → QA results                          → Security execution → validation
-  → Evidence / reports                  → Finding
-
-"What exists in the application,      "Given the selected methodology, what
- and what evidence do we have?"         security tests should be performed?"
-```
-
-Removed from this skill: accessibility testing · performance testing ·
-responsive testing · cross-browser testing · security testing · passive security
-scanning · CVSS/severity/findings · security-skill recommendation.
+It is an **AI-driven QA Engineering Framework**.
 
 ---
 
@@ -122,52 +94,23 @@ Instead of treating QA as separate activities, the framework connects them into 
 
 # How It Works
 
-## Step 1 — Explore the Application
+## Step 1 — Understand the Application
 
-First it explores the application to understand it.
+First it tries to understand the application.
 
 It discovers
 
-* pages and links
-* routes, including dynamic route templates
-* `robots.txt` and `sitemap.xml` entries
-* JavaScript routes and GraphQL endpoints
-* hidden endpoints (found in JS/sitemap/robots, not page-linked)
-* forms, inputs and parameters
-* buttons, navigation and components
-* authentication surfaces
-* network / API traffic, with masked request and response capture
-* user roles and business flows
+* pages
+* workflows
+* forms
+* buttons
+* navigation
+* components
+* authentication
+* user roles
+* business flows
 
 Instead of blindly clicking buttons, it understands what the application is.
-
-### What it guarantees — and what it doesn't
-
-It does **not** promise "every page". It promises **all reachable, in-scope
-surfaces within the configured exploration budget**.
-
-Anything discovered but not reached is written down with a reason:
-
-```
-inaccessible · blocked · capped · excluded
-unavailable state · unavailable credentials
-```
-
-### Two exploration modes
-
-| Mode | Credentials | Explores |
-|---|---|---|
-| **Unauthenticated Exploration** | none | publicly reachable in-scope surfaces |
-| **Authenticated Exploration** | supplied | plus the authenticated surfaces that account can reach |
-
-Neither is *authorization*. Approved scope is mandatory either way.
-
-### It records facts, not conclusions
-
-✅ "A parameter exists." ✅ "A GraphQL endpoint was observed."
-❌ "This parameter is injectable." ❌ "Run the injection skill here."
-
-The second kind is the security skill's job, later, outside this skill.
 
 ---
 
@@ -353,17 +296,12 @@ the framework searches for
 
 * role
 * label
-* accessible name
 * text
 * placeholder
+* accessibility
 * nearby elements
 
 Then repairs the locator automatically.
-
-> Note: role, label and accessible name are **locator and self-healing
-> evidence**. They are why removing *accessibility testing* did not remove
-> accessibility *semantics* — the healing score still weights an accessibility
-> match at 0.20.
 
 ---
 
@@ -384,16 +322,10 @@ Logs
 
 DOM
 
-Semantic / role metadata
-
-Network (masked request + response)
-
-Timing
+Network
 ```
 
-Nothing is hidden — and nothing sensitive is stored raw. Secrets, tokens,
-cookies, auth headers and PII are masked **before** anything is written to
-disk.
+Nothing is hidden.
 
 ---
 
@@ -453,20 +385,13 @@ Failure Report
 
 ↓
 
-**Exploration Disclosure** — what was explored, what wasn't, and why
-
-↓
-
 Learning Report
 
 ↓
 
 Optimization Report
 
-Managers, developers and QA engineers each get the information they need. The
-Exploration Disclosure is mandatory: it names the exploration mode, the budget,
-every cap that was hit, and every surface that went unreached with its reason. A
-capped or credential-limited run is never presented as complete.
+Managers, developers, QA engineers, and security teams each get the information they need.
 
 ---
 
@@ -522,74 +447,48 @@ Over time it learns
 
 Almost every major QA activity.
 
-| QA Activity                        | Covered                        |
-| ---------------------------------- | ------------------------------ |
-| Application Exploration            | ✅ (bounded, evidence-backed)  |
-| Test Planning                      | ✅                             |
-| Requirement Traceability (planned) | 🟡                             |
-| Functional Testing                 | ✅                             |
-| Smoke Testing                      | ✅                             |
-| Sanity Testing                     | ✅                             |
-| Regression Testing                 | ✅                             |
-| End-to-End Testing                 | ✅                             |
-| UI Testing                         | ✅                             |
-| Forms Testing                      | ✅                             |
-| Authentication Testing             | ✅                             |
-| Navigation Testing                 | ✅                             |
-| API Testing                        | ✅                             |
-| Dashboard Testing                  | ⚪ optional — off by default   |
-| Table Testing                      | ⚪ optional — off by default   |
-| Visual Testing                     | ⚪ optional — off by default   |
-| Cross Browser Testing              | ❌ not this skill's job        |
-| Accessibility Testing              | ❌ not this skill's job        |
-| Performance Testing                | ❌ not this skill's job        |
-| Responsive Testing                 | ❌ not this skill's job        |
-| Security Testing                   | ❌ separate security skill     |
-| Mobile Testing                     | Future                         |
-| Database Validation                | Future                         |
-| CI/CD Integration                  | ✅                             |
-| Reporting                          | ✅                             |
-| Learning                           | ✅                             |
+| QA Activity                        | Covered           |
+| ---------------------------------- | ----------------- |
+| Test Planning                      | ✅                |
+| Requirement Traceability (planned) | 🟡                |
+| Functional Testing                 | ✅                |
+| Smoke Testing                      | ✅                |
+| Sanity Testing                     | ✅                |
+| Regression Testing                 | ✅                |
+| End-to-End Testing                 | ✅                |
+| UI Testing                         | ✅                |
+| API Testing                        | Planned           |
+| Visual Testing                     | Optional (disabled initially) |
+| Database Validation                | Future            |
+| CI/CD Integration                  | ✅                |
+| Reporting                          | ✅                |
+| Learning                           | ✅                |
 
 ---
 
 # What Types of Testing Can It Perform?
 
-Exactly ten categories.
+Current capabilities include:
 
-| # | Category | Default |
-|---|---|---|
-| 1 | Smoke | on |
-| 2 | Functional | on |
-| 3 | UI | on |
-| 4 | Forms | on |
-| 5 | Authentication | on |
-| 6 | Navigation | on |
-| 7 | API | on |
-| 8 | Dashboard | **off** |
-| 9 | Table | **off** |
-| 10 | Visual | **off** |
-
-**Functional** breaks down into:
-
+* Smoke testing
+* Sanity testing
+* Functional testing
+* Regression testing
+* End-to-end testing
+* UI testing
+* Workflow testing
+* Form validation testing
+* Authentication testing
+* Authorization and role-based testing
+* Navigation testing
+* CRUD testing (create/read/update; never delete)
+* Error handling testing
+* Session testing
+* State transition testing
+* Negative testing
 * Positive testing
-* Boundary testing
-* Business-rule testing
-* CRUD testing — **except Delete**
-* State-transition testing
-
-Also covered inside those categories: workflow testing, form validation, session
-testing, error handling, role-based application behaviour, negative testing,
-retry validation and self-healing validation.
-
-**On Delete.** The explorer records *that* delete functionality exists — that is
-a fact worth knowing. It never generates a test that deletes application data. A
-test that creates its own synthetic data still cleans that data up afterwards;
-that is housekeeping, not a Delete test.
-
-**Never generated:** SQL injection · XSS · SSRF · IDOR · command injection ·
-path traversal · accessibility/WCAG checks · performance budgets · viewport
-matrices · cross-browser matrices.
+* Retry validation
+* Self-healing validation
 
 ---
 
@@ -703,31 +602,12 @@ If we compare it to a traditional QA process:
 | Learning & Optimization | ✅       |
 | Continuous Improvement  | ✅       |
 
-It covers the QA automation lifecycle stages listed above. It deliberately does
-**not** attempt a coverage percentage — a figure like that is a claim about work
-that was never measured, and this framework's own governance forbids claiming
-coverage it did not execute. What a run actually covered is reported per run, in
-the Exploration Disclosure and the coverage report.
-
-Out of scope by design: security assessment (a separate skill), accessibility,
-performance, responsive and cross-browser testing. Deferred to future phases:
-enterprise ALM integrations (Jira/Azure DevOps), mobile testing, visual AI
-testing, and large-scale distributed execution.
+Overall, it delivers **bounded, evidence-backed QA automation** across the in-scope Site Explorer categories (smoke, functional, UI, forms, authentication, navigation, API; dashboard and table optional; visual optional and disabled initially). Coverage is always reported against what was actually discovered and executed — never claimed beyond it, and every skipped, capped, inaccessible, or blocked surface is disclosed with a reason. Out of scope: accessibility, performance, responsive, cross-browser, and all security testing (owned separately by the Skillmatrix security skills), plus mobile and large-scale distributed execution.
 
 ---
 
 # One-Sentence Executive Summary
 
-> **This framework is the backend methodology for the RedOps Site Explorer: an
-> AI-powered QA engineering platform that explores an authorized web application
-> within a bounded budget, builds an evidence-backed model of what exists, plans
-> risk-based QA testing, generates enterprise-grade Playwright automation,
-> executes it with retry and self-healing, collects masked and provenanced
-> evidence, analyzes failures, reports honestly what was and was not covered,
-> learns from every execution, and maintains deterministic and auditable
-> behaviour — while drawing a hard line at security interpretation, which belongs
-> to a separately selected security skill.**
+> **This framework is an AI-powered QA Engineering Platform that understands an application, builds a knowledge model, plans risk-based testing, generates enterprise-grade Playwright automation, executes tests with retry and self-healing, collects rich evidence, analyzes failures, produces comprehensive reports, learns from every execution, and continuously improves future test runs while maintaining deterministic and auditable behavior.**
 
-That's the description to use with senior engineers or architects — it reflects
-the architecture accurately, including its boundary, without overstating
-capabilities.
+That's the description I'd use with senior engineers or architects—it accurately reflects the architecture you've designed without overstating capabilities.

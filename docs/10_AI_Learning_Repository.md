@@ -4,16 +4,9 @@
 
 **Document:** 10_AI_Learning_Repository.md
 
-**Version:** 4.1
+**Version:** 3.0
 
 **Status:** Draft
-
-> **Revision 4.1 — W8, Site Explorer boundary.** Target-performance and
-> accessibility-coverage learning removed; cross-browser reliability and
-> cross-browser agreement removed (Chromium only). **Framework execution**
-> performance learning (§18) is retained as telemetry. §7.3 cold start, §7.5
-> pinned snapshot and §31 governance are unchanged — §7.5 remains the source of
-> the Historical Reliability term (`02` §21, `PLAYBOOK` §20.1).
 
 **Depends On:**
 
@@ -827,7 +820,6 @@ Tracked metrics include:
 - Page Coverage
 - Component Coverage
 - API Coverage
-- Exploration Coverage
 - Risk Coverage
 
 Coverage trends help identify areas that consistently lack testing.
@@ -898,11 +890,6 @@ Reliability
 
 99%
 ```
-
-> **W8.** Chromium is the only supported browser (`01` §2, `07`). Firefox and
-> WebKit reliability records are no longer produced. Existing historical records
-> remain immutable and are never rewritten (`01` §30) — they are simply not
-> extended.
 
 ---
 
@@ -1215,9 +1202,6 @@ These events allow other framework components to react without tight coupling.
 ---
 
 # 31. Security & Governance
-
-> **Governance only (W8 / C5).** Secret masking, credential handling and
-> evidence protection for stored history. No security assessment of the target.
 
 Historical knowledge may contain sensitive information.
 
