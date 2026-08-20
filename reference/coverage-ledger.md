@@ -1,6 +1,6 @@
 # The Coverage Ledger — nothing disappears quietly
 
-> Executor reference. **Mandatory artifact and gate.** Every other fix in this
+> Executor reference. **Mandatory artifact and gate — Phases 4 and 10.** Every other fix in this
 > skill repairs a past mistake. This one prevents the next one.
 
 ## Why this exists

@@ -1,6 +1,6 @@
 # Site-Agnostic Discovery, Locators, and Interaction
 
-> Executor reference. **Mandatory technique.** This file exists because a run
+> Executor reference. **Mandatory technique for Phases 0B–3.** This file exists because a run
 > against one application produced a pipeline that only worked against *that*
 > application: 126 hand-written framework selectors, every label unresolved, zero
 > dropdowns modelled, and a test that passed while driving the wrong element.

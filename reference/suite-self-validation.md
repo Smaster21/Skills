@@ -1,6 +1,6 @@
 # Suite Self-Validation — provenance and falsifiability
 
-> Executor reference. **Mandatory gate.** This is the structural fix for the root
+> Executor reference. **Mandatory gate — Phases 5–6 (and 9 for Gate C).** This is the structural fix for the root
 > cause behind the ten entries in `known-failure-modes.md`.
 
 ## The root cause

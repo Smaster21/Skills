@@ -1,6 +1,6 @@
 # Write Operations and Test Data
 
-> Executor reference. **Mandatory before planning any write.** `SKILL.md` declares
+> Executor reference. **Mandatory before planning any write (Phase 4).** `SKILL.md` declares
 > `CRUD-except-Delete` and `business-rule` as coverage areas, but no document said
 > **how** to perform a write safely. Six executions produced zero write tests as a
 > result — a declared area silently delivered as nothing.

@@ -124,17 +124,12 @@ Full contract: `w7-api-evidence-contract.md`.
 
 ### This is a QA report, not a security assessment
 
-The output is limited to QA and application-exploration content. Vulnerability
+Output is limited to QA and application-exploration content; coverage is
+**Application Exploration Coverage**, and failures use QA categories. Vulnerability
 findings, CVSS, exploitability, attack priority, security coverage, security
-recommendations, and any security decision layer all fall outside it. Coverage is **Application Exploration Coverage** /
-**QA Coverage** — never "security coverage". A failure is a QA failure category
-(`locator_failure`, `assertion_failure`, `timeout`, `navigation_failure`,
-`authentication_failure`, `network_failure`, `environment_failure`,
-`test_data_failure`, `application_behavior_failure`, `blocked`, `unknown`) — never
-a vulnerability.
-
-Security assessment is owned separately by the Skillmatrix security skills, which
-may consume this evidence later. This skill emits none of it.
+recommendations and any security decision layer fall outside it — those are owned
+by the Skillmatrix security skills, which may consume this evidence later
+(`SKILL.md` Rule 21).
 
 ### Sensitive data — one masking authority, already implemented
 
@@ -153,9 +148,7 @@ BLOCKED · NOT_EXERCISED · NOT_OBSERVED` — never a bare `null`, `0`, `false` 
 
 ### Determinism and backward compatibility
 
-Stable names only — never `report-new.json`, `final-final-v2.json`, or
-`output123.json`. Identical input yields identical artifact names and locations.
-
+Stable names only; identical input yields identical artifact names and locations.
 Before renaming or removing an existing artifact, identify its consumers
 (result ingestion, runner logic, tests). Where a consumer exists, provide a
 deterministic adapter or a compatibility period. **Never silently break an
@@ -163,3 +156,44 @@ existing artifact contract.**
 
 Environment variables, the scope check, cleanup and determinism:
 **`scope-enforcement.md`**.
+
+## Workflow input collections
+
+Discovery and planning are written fresh each run, so these two collections are a
+**fixed contract** — emit the field names verbatim; planning reads them verbatim.
+
+**`discovery/transitions.json`** — one record per page-to-page move witnessed:
+
+```json
+{
+  "fromPageId": "PAGE-014",
+  "toPageId":   "PAGE-021",
+  "via":        "<affordance name>"
+}
+```
+
+Derive it from what the crawl tracks: origin page, landing page, affordance
+followed. A page with no inbound transition is an entry point. Where a target
+routes client-side and screens share one URL, identity comes from the route/view
+key the profile measured — not the URL alone, or every screen collapses into one
+node and no flow is found.
+
+**`discovery/affordances.json`** — one record per actionable control:
+
+```json
+{
+  "pageId":          "PAGE-014",
+  "accessibleName":  "<affordance name>",
+  "formMethod":      "post",
+  "isSubmit":        true,
+  "issuesNonGet":    true
+}
+```
+
+`formMethod` is the owning form's method copied onto the control. `issuesNonGet`
+records whether activation would produce a non-`GET` request; where genuinely
+unknown, emit `null` — the step is then treated as write-intent and gated.
+
+**Planning reads exactly those two files.** Where either is absent or empty, the
+workflow list is empty and the limitation names which input was missing — a wiring
+gap, so it is never read as "this site has no flows".

@@ -20,14 +20,14 @@ with measured confidence, and reports honestly what was and was not covered.
   self-healing automated test suite with traceable evidence — without a human
   hand-writing locators, plans, or assertions.
 - **Coverage:** smoke, functional (positive, boundary, business-rule,
-  CRUD-except-Delete, state-transition), UI, forms (**exercised as workflows**:
-  populate → submit → assert resulting state), authentication, navigation, API.
-  Dashboard and table optional; visual optional/disabled initially.
+  CRUD-except-Delete, state-transition), UI, forms and **multi-step business
+  flows** (populate → submit → assert the state moved — `workflow-flows.md`),
+  authentication, navigation, API. Dashboard/table optional; visual disabled.
 - **Target type:** web applications (any framework), in **Unauthenticated
   Exploration** and, when credentials are supplied, **Authenticated Exploration**.
-- **Mount it when:** verifying / regression-testing / building an E2E suite for
-  an in-scope web app, or as the defensive counterpart after recon maps a surface.
-- **Defensive only:** it performs no security testing.
+- **Mount it when:** verifying / regression-testing / building an E2E suite for an
+  in-scope web app, or as the defensive counterpart after recon maps a surface.
+  **Defensive only** — it performs no security testing.
 
 A run that emits scripts without discovery, decisions, measured evidence, and
 disclosed scope has not done the job.
@@ -78,10 +78,8 @@ evidence*, reusing AIC identifiers verbatim where they exist. Contracts:
 ## Tools
 
 `node` (≥20) · `npm` · `npx playwright` · `chromium` (Playwright-managed build,
-installed without `install-deps` and without `sudo`) · `jq`.
-
-Install: `npm i -D @playwright/test typescript` then
-`npx playwright install chromium`. Standard Kali otherwise.
+installed without `install-deps` and without `sudo`) · `jq`. Install:
+`npm i -D @playwright/test typescript` then `npx playwright install chromium`.
 
 ## Related Skills
 
@@ -131,8 +129,9 @@ healing honesty, artifact immutability: **`reference/rules-extended.md`**.
 
 ## Reference
 
-Executor playbooks; the coordinator hands an executor one or two via
-`SKILL_FILES`. This `SKILL.md` is never passed to an executor.
+Executor playbooks. Tier 0 loads for the whole run; Tier 1 loads per phase — the
+**loading manifest is in `reference/INDEX.md`**. `SKILL.md` is never passed to an
+executor.
 
 | File | Read it when |
 |---|---|
@@ -142,9 +141,10 @@ Executor playbooks; the coordinator hands an executor one or two via
 | `suite-self-validation.md` · `coverage-ledger.md` | proving the suite sound; accounting every artifact |
 | `known-failure-modes.md` | before building any phase |
 | `w7-api-evidence-contract.md` | anything touching API/network output |
+| `workflow-flows.md` | the target has multi-step flows |
 | `write-operations-and-test-data.md` | before planning a write |
 | `output-and-scope.md` · `scope-enforcement.md` | output tree, env contract, scope checks |
 | `final-report-md.md` · `final-report-json.md` | producing the deliverable |
 | `evidence-and-confidence.md` | the evidence → confidence chain |
-| `execution-entry-point-*.md` | full operational contract (deep reference) |
-| `INDEX.md` · `../docs/` | navigator; the 18-document specification |
+| `execution-entry-point-01.md` … `-07.md` | full operational contract (deep reference) |
+| `INDEX.md` · `../docs/` | **loading manifest** + navigator; the 18-document spec |

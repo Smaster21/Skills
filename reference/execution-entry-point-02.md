@@ -1,6 +1,99 @@
-<!-- PRESERVED VERBATIM (part 2 of 6). Split ONLY to satisfy the 200-line
-     reference cap; no sentence was altered, reordered, or removed. The original
-     preservation note is retained at the top of part 1. -->
+<!-- PRESERVED VERBATIM (part 2 of 7). Split ONLY to satisfy the 200-line
+     reference cap; split boundaries never fall inside a fenced block, and no
+     sentence was altered, reordered, or removed. Preservation note: part 1. -->
+## Optional Engines — Normative When Present
+
+Absence changes **cost or assurance, never correctness** (`01` §16).
+
+| # | Document | Owns | On absence |
+|---|---|---|---|
+| 08 | [08_Self_Healing_Engine.md](../docs/08_Self_Healing_Engine.md) | Self-healing · Locator evolution · Healing Candidate Score *(engine-local)* | No healing; failures reported |
+| 10 | [10_AI_Learning_Repository.md](../docs/10_AI_Learning_Repository.md) | Learning Database | No historical evidence |
+| 11 | [11_Unified_Test_Intelligence_Engine.md](../docs/11_Unified_Test_Intelligence_Engine.md) | Unified Intelligence Projection *(derived)* · **Framework Cache Service** | Consume `04` directly |
+| 12 | [12_Adaptive_Execution_Optimizer.md](../docs/12_Adaptive_Execution_Optimizer.md) | Execution Optimization Proposal *(advisory)* · Batch planning · Runtime prediction | `07` executes plan order |
+| 13 | [13_Incremental_Discovery_Engine.md](../docs/13_Incremental_Discovery_Engine.md) | Discovery Delta · Fingerprinting | Full discovery |
+| 14 | [14_Confidence_Coverage_Optimizer.md](../docs/14_Confidence_Coverage_Optimizer.md) | Coverage Recommendations · Stop-condition recommendation | Full plan executes |
+| 15 | [15_AI_Planning_Review_Engine.md](../docs/15_AI_Planning_Review_Engine.md) | Planning Review *(advisory)* | Plan unreviewed, flagged |
+
+## Supporting Documents — Non-Normative Operational Playbooks
+
+Neither is an engine. Neither adds a state, a phase, or any ownership. The Engine
+Registry remains **01–15**.
+
+| Document | Layer | Answers |
+|---|---|---|
+| [16_QA_Execution_Playbook.md](../docs/16_QA_Execution_Playbook.md) | Operational QA doctrine | **WHAT** good QA behaviour looks like — environment intelligence, workflow-first validation, evidence standards, runtime adaptation, reporting integrity |
+| [IMPLEMENTATION_PLAYBOOK.md](../docs/IMPLEMENTATION_PLAYBOOK.md) | Playwright implementation | **HOW** to build it — scaffold, config, discovery tactics, retry mechanics, ZAP tiers, hard-won rules, manual mode (§17), health pre-flight (§18) |
+
+Consult both for judgement and tactics. Neither for authority.
+
+---
+
+# 2. Precedence
+
+```
+01_Master_Architecture              ← highest architectural authority
+        ↓                             architecture, principles, lifecycle
+Architecture_Ownership_Matrix       ← governance contract
+        ↓                             who owns what
+02 … 15                             ← engine specifications
+        ↓
+16_QA_Execution_Playbook            ← non-normative: operational doctrine (WHAT)
+IMPLEMENTATION_PLAYBOOK             ← non-normative: implementation (HOW)
+        ↓
+SKILL.md                            ← orchestration only (WHEN)
+```
+
+- `01` SHALL take precedence over every other document.
+- The **Matrix** governs *ownership allocation only*. It does not define architecture.
+- Where an engine document conflicts with `01`, **`01` wins**.
+- Where an engine document conflicts with the Matrix on *who owns what*, **the Matrix wins** until `01` is amended.
+- Where the Matrix conflicts with an architectural principle in `01`, **`01` wins** and the Matrix is defective.
+- Where two engine documents conflict, **the lower number wins**.
+- Neither playbook overrides a numbered document. If one appears to, that playbook is defective.
+- **This file overrides nothing.**
+- No document authorises skipping a lifecycle stage or a mandatory quality gate.
+
+---
+
+# 3. Ownership Resolution
+
+**This file never resolves ownership.** When ownership is unclear:
+
+1. Read `Architecture_Ownership_Matrix.md` — 37 capabilities, 14 canonical datasets.
+2. If the Matrix is silent or ambiguous, read `01` §37 and §42.
+3. If both are silent, **stop and report**. Do not infer an owner.
+
+## Two Authorities Only
+
+```
+02 Decision Engine   →  decides WHAT happens
+07 Execution Engine  →  decides HOW it runs at runtime
+```
+
+Every other engine produces knowledge, plans, artifacts, or recommendations.
+None decides. None executes.
+
+## Routing Table — Every Operation Has One Destination
+
+| Operation | Routes to |
+|---|---|
+| Any decision · risk · Framework Confidence · policy · conflict | **02** |
+| Any knowledge operation · graph read, version, diff | **04** |
+| Any planning operation · canonical coverage · dependencies · retry policy | **05** |
+| Any generation operation · regeneration scope · duplicate detection | **06** |
+| Any runtime execution · scheduling · browsers · workers · timeouts | **07** |
+| Any healing operation · locator history | **08** |
+| Any reporting operation · analytics | **09** |
+| Any learning operation · historical evidence | **10** |
+| Cache storage, eviction, TTL *(region semantics stay with the region owner)* | **11** |
+| Optimization advice · batch plan · runtime prediction | **12** |
+| Change detection · fingerprinting | **13** |
+| Coverage optimization · stop recommendation | **14** |
+| Plan review | **15** |
+| Operational judgement — *how should a QA engineer behave here?* | **16** |
+| Implementation tactics — *how do I write this in Playwright?* | **PLAYBOOK** |
+
 ## Framework Confidence vs Engine-Local Scores
 
 **02 owns the single Framework Confidence model.** An engine MAY compute an
@@ -80,98 +173,7 @@ decision, never a substitute for one.
 
 ---
 
-## What It SHALL NEVER Do
-
-It SHALL NEVER own decisions, planning, execution, healing, reporting, or
-learning.
-
-It SHALL NEVER calculate **Framework Confidence** or **Framework Risk**.
-
-It SHALL NEVER bypass the Decision Engine.
-
-Every value it reasons with is **consumed from its owner**:
-
-| Value | Consumed from | Contract |
-|---|---|---|
-| Framework Risk | **02** | §20 Risk Engine |
-| Framework Confidence | **02** | §21 Confidence Engine |
-| Canonical coverage | **05** | §18 Coverage Analysis |
-| Coverage gaps, test value | **14** | Coverage Recommendations |
-| Execution cost, runtime prediction | **12** | §26 Runtime Predictor |
-| Application model | **04** | Graph query contract |
-| Historical evidence | **10** / **09** | Learning and analytics contracts |
-| Duplicate detection | **06** | §32 |
-
-Where a required value is unavailable, the layer SHALL state the gap. It SHALL
-NOT substitute an estimate of its own for an owner's value.
-
 ---
 
-## Output — The Reasoning Package
-
-Every recommendation SHALL contain exactly these five fields:
-
-| Field | Content |
-|---|---|
-| **Reasoning** | Why this request, in terms of the objective it serves |
-| **Supporting evidence** | Concrete observations, cited by source and owner |
-| **Uncertainty** | What remains unknown, and what would resolve it |
-| **Expected confidence improvement** | Estimated, as evidence for `02` — never a Framework Confidence value |
-| **Expected execution cost** | Consumed from `12` where available; otherwise stated as unavailable |
-
-A package with an empty evidence field SHALL NOT be submitted.
-
-### Not A Canonical Artifact
-
-The package is **transient**. It is submitted to the receiving owner and absorbed
-into that owner's existing evidence and audit record — `02` §36 Evidence Model
-and §39 Decision Audit for decisions, `09` for reporting conclusions.
-
-It is **not** persisted as a dataset of its own, appears in no Canonical Data
-Ownership row, and creates no new artifact. The Matrix is unchanged.
-
-### Estimates Are Evidence, Not Values
-
-The two estimated fields follow the engine-local score precedent already
-established for `08`, `14`, and `15`:
-
-- They are **evidence submitted to an owner**
-- They SHALL NEVER be reported as Framework Confidence or Framework Risk
-- They SHALL NEVER override an owner's value
-- Where an estimate and an owner's value disagree, **the owner's value prevails**
-
----
-
-## Visibility
-
-The layer is **invisible by default**. It produces no user-facing output.
-
-Its reasoning becomes visible only when verbose or debug output is enabled,
-resolved through the configuration hierarchy owned by the Configuration Layer
-(`01` §29). This orchestrator defines no configuration option of its own.
-
-When visible, reasoning SHALL be shown as the package's five fields — never as
-narration, and never as a substitute for the owner's recorded decision.
-
----
-
-## Determinism
-
-Identical inputs SHALL produce an identical package (`01` §3.1).
-
-The layer SHALL NOT introduce randomness, wall-clock dependence, or
-completion-order dependence. Where it reasons during execution, it does so at the
-same deterministic checkpoints `14` uses (§5, Phase 7) — never per test
-completion.
-
-## Failure Mode
-
-Where evidence is insufficient to reason, the layer SHALL **refuse to
-recommend** — consistent with `02` §5.5 Safe Failure.
-
-It SHALL then route the underlying request with the evidence gap stated, so the
-owner decides on a known-incomplete picture rather than a fabricated one.
-
-Refusing to recommend SHALL NEVER block a request from reaching its owner.
-
----
+<!-- nav -->
+*← [part 1](execution-entry-point-01.md)  ·  part 2 of 7  ·  [part 3](execution-entry-point-03.md) →*  ·  [reference index](INDEX.md)

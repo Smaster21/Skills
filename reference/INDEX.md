@@ -1,8 +1,46 @@
 # qa-automation — Reference Navigator
 
-Navigator for this skill's reference set. The coordinator passes one or two of
-these files to an executor via `SKILL_FILES`; `SKILL.md` itself is never passed
-to an executor.
+Navigator and **loading manifest** for this skill's reference set. `SKILL.md` is
+never passed to an executor.
+
+## Loading manifest — which files an executor gets, and when
+
+A file is required **for a phase**, not in the abstract. Load Tier 0 once, then
+the Tier 1 row for the phase you are entering. This keeps an executor at roughly
+400–500 lines of instruction at any moment instead of the full ~2,900.
+
+**Tier 0 — always loaded, for the whole run (~230 lines)**
+
+| File | Why |
+|---|---|
+| [`quickstart.md`](quickstart.md) | the step sequence and exact commands |
+| [`scope-enforcement.md`](scope-enforcement.md) | env contract + the scope check that precedes any navigation |
+
+**Tier 1 — loaded for the current phase only**
+
+| Phase | Load | ~Lines |
+|---|---|---:|
+| 0 CONFIGURING | `rules-extended.md` | 67 |
+| 0B PROFILING · 1 DISCOVERING | `discovery-profiling.md` + `site-agnostic-discovery.md` + `workflow-flows.md` | 390 |
+| 2 BUILDING_GRAPH · 3 Locator Verification | `site-agnostic-discovery.md` (already loaded) | — |
+| 4 PLANNING | `coverage-ledger.md` + `write-operations-and-test-data.md` + `workflow-flows.md` | 400 |
+| 5 GENERATING · 6 VALIDATING | `suite-self-validation.md` | 153 |
+| 7 EXECUTING · 9 DIAGNOSTICS | `known-failure-modes.md` | 182 |
+| 10 REPORTING | `final-report-md.md` + `final-report-json.md` + `output-and-scope.md` | 427 |
+
+**Tier 2 — on demand only**
+
+| File | Load when |
+|---|---|
+| [`w7-api-evidence-contract.md`](w7-api-evidence-contract.md) | touching API/network output or the AIC |
+| [`evidence-and-confidence.md`](evidence-and-confidence.md) | producing or auditing the confidence chain |
+| [`execution-lifecycle.md`](execution-lifecycle.md) | a phase's behaviour is unclear |
+| `execution-entry-point-01..07.md` | a reviewer needs the full historical contract |
+
+A "Mandatory" label inside a reference file means **mandatory for the phase(s)
+that load it**, per the table above — it does not mean every run loads every file.
+
+## Full file list
 
 | File | Give to an executor when… | Contents |
 |------|---------------------------|----------|
@@ -13,6 +51,7 @@ to an executor.
 | [`site-agnostic-discovery.md`](site-agnostic-discovery.md) | Building or reviewing discovery, locators, or interaction | Site profiling, standards-based labels, behavioural widget detection, locator ladder, intent rule, depth-first traversal, read-only boundary |
 | [`suite-self-validation.md`](suite-self-validation.md) | Always — it is the root-cause fix | Assertion provenance, negative control, classification provenance |
 | [`coverage-ledger.md`](coverage-ledger.md) | Always — it gates the report | Every discovered artifact ends `TESTED` or `EXCLUDED` with a reason |
+| [`workflow-flows.md`](workflow-flows.md) | Target has multi-step business flows | Affordance + transition capture, `INFERRED` flow assembly, per-step gating, `INFERRED → EXERCISED` promotion, partial-walk reporting (`docs/05` §19) |
 | [`known-failure-modes.md`](known-failure-modes.md) | Before building any phase | Ten real defects with measured cost and the rule preventing each |
 | [`w7-api-evidence-contract.md`](w7-api-evidence-contract.md) | Any work touching API/network output | W7-A/B/C + AIC v1.0.0 preserved; derived views; one masking authority |
 | [`write-operations-and-test-data.md`](write-operations-and-test-data.md) | Before planning a write | `ALLOW_WRITE_TESTS` gate, run-scoped markers, persistence verification |
@@ -21,7 +60,7 @@ to an executor.
 | [`final-report-md.md`](final-report-md.md) | Writing the human report | The 15 required sections and their content |
 | [`final-report-json.md`](final-report-json.md) | Producing machine-readable output | `final-report.json`, `summary.json`, `run.json`, retry/healing, failure evidence, checklist |
 | [`evidence-and-confidence.md`](evidence-and-confidence.md) | Verifying the evidence chain | Evidence Object → Evidence Quality → Framework Confidence |
-| [`execution-entry-point-01.md`](execution-entry-point-01.md) … [`-06.md`](execution-entry-point-06.md) | A reviewer needs the full operational contract | Preserved verbatim, split only to satisfy the reference cap |
+| [`execution-entry-point-01.md`](execution-entry-point-01.md) … [`-07.md`](execution-entry-point-07.md) | A reviewer needs the full operational contract | Preserved verbatim, split only to satisfy the reference cap |
 
 ## Deep specification (authority)
 

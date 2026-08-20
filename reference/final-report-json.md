@@ -1,6 +1,6 @@
 # Report Data Contracts — `final-report.json`, `summary.json`, `run.json`
 
-> Executor reference. **Mandatory.** The human report and its section list live
+> Executor reference. **Mandatory — Phase 10.** The human report and its section list live
 > in `final-report-md.md`; this file carries the machine-readable contracts,
 > retry/healing reporting, failure evidence, the README, and the checklist.
 

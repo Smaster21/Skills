@@ -1,6 +1,6 @@
 # Known Failure Modes — mistakes already made, and the rules that prevent them
 
-> Executor reference. **Mandatory.** Every entry below is a real defect from a
+> Executor reference. **Mandatory before building any phase.** Every entry below is a real defect from a
 > real execution, with its measured cost. None was caught by the type gate, the
 > locator gate, or a passing test suite — which is precisely why each needs a
 > rule rather than good intentions.

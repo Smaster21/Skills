@@ -1,6 +1,6 @@
 # Final Report — `report/final-report.md`
 
-> Executor reference. **Mandatory deliverable.** The report must be understandable
+> Executor reference. **Mandatory deliverable — Phase 10.** The report must be understandable
 > by QA engineers, developers, project managers and technical leads **without**
 > knowledge of the agent, the runner, or this skill's internals — and without
 > reading raw logs or traces.

@@ -1,3 +1,90 @@
+<!-- ============================================================================
+     W8 SUPERSESSION ERRATA — prepended 2026-08-17.
+     Everything BELOW the preservation marker is unchanged, byte for byte.
+     This block is the only addition to this file.
+     ============================================================================ -->
+
+# W8 SUPERSESSION ERRATA
+
+> **Read this before the preserved body below.** The body is the W6 execution
+> entry point, retained verbatim as historical reference. Parts of it were
+> superseded by the **W8 Site Explorer boundary** update. Where this errata and
+> the preserved body disagree, **this errata wins** — and the current owning
+> document wins over both.
+
+## What this skill is now
+
+The backend methodology for the **RedOps Site Explorer**:
+
+```
+URL → scope/authorization validation → browser-based exploration
+    → application understanding → evidence/provenance collection
+    → QA test planning → QA test generation → Playwright validation
+    → Playwright execution → retry/diagnostics/self-healing
+    → Site Explorer result
+```
+
+Security assessment is **not** part of this skill. A separately selected
+Skillmatrix security skill reads this skill's evidence and determines its own
+methodology.
+
+## Superseded statements in the preserved body
+
+| Location | Preserved text | Superseded by |
+|---|---|---|
+| Frontmatter `description` (line ~10) | Advertises "accessibility via axe-core, visual, responsive, cross-browser, Lighthouse performance, tiered security via ZAP passive proxy + OWASP Top 10 mapping" | **All of it removed in W8.** The current description is in `SKILL.md`. No axe-core, no Lighthouse, no ZAP, no OWASP mapping, no responsive or cross-browser matrices |
+| §1 Document Registry — `IMPLEMENTATION_PLAYBOOK` row | "…retry mechanics, **ZAP tiers**, hard-won rules…" | `PLAYBOOK` §9 (ZAP tiers), §10 (OWASP mapping) and §11 (performance budgets) are **REMOVED — W8**. `PLAYBOOK` §5 is now the ten QA categories; §21 owns deep discovery, API capture, bounded exploration, dedup and exploration modes |
+| §0 Framework Identity — "plans … and a **browser matrix**" | Implies a multi-browser matrix | **Chromium only** (`01` §2, `05` §27, `07`, `16` §32) |
+| §6 Failure Handling / §8 — "security vulnerabilities", "…auth, **security**, data corruption → real defects" | Treats security defects as a QA failure class | A failure is a **target defect, suite defect, or environment artifact** (`08` §16, `01` §23). It is NEVER a security finding and never earns a severity or CVSS |
+| **§8 Non-Goals** — "Security validation is a **secondary, opt-in** goal — passive by default. Active security scanning requires explicit authorization and a dedicated test environment (Playbook §9)" | Security validation is opt-in | **Superseded.** Security testing is **not a qa-automation responsibility at any tier**. It is not gated, opt-in, or configurable — the capability does not exist (`01` §2). `SECURITY_SCAN` and `ZAP_API_KEY` no longer exist |
+
+## Added invariants (not in the preserved body)
+
+These are now in force and belong with §7 Invariants / §9 Governance:
+
+1. **No security interpretation.** Record factual observations only — an input
+   exists, a form exists, a route exists, an API endpoint exists, a JavaScript
+   or GraphQL route was discovered, an authentication surface exists, a
+   parameter exists, a request/response was observed. NEVER conclude that an
+   attack class applies, that a surface is vulnerable, that a security skill
+   should be run, or that any of it is probable. NEVER emit a severity, CVSS,
+   finding, applicability tag, routing suggestion, or filtered security test
+   plan.
+2. **Reserved states are never emitted.** The ladder is
+   `DISCOVERED → OBSERVED → EXERCISED → VALIDATED`. `OFFENSIVELY_VALIDATED` and
+   `VULNERABILITY_CONFIRMED` belong to the downstream security skill and
+   validator, and are un-emittable here.
+3. **Bounded exploration.** Never claim 100% or "every page". The guarantee is
+   *all reachable, in-scope surfaces within the configured exploration budget*.
+   Every discovered-but-not-reached surface carries exactly one reason:
+   `inaccessible · blocked · capped · excluded · unavailable state ·
+   unavailable credentials` (`01` §2.2, `09` §12A).
+4. **Deterministic identity, no re-crawl.** A surface is revisited only for a
+   recorded reason — distinct state, distinct authentication context, workflow
+   transition, validation, or explicitly authorized re-discovery
+   (`PLAYBOOK` §21).
+5. **Exploration mode is not authorization.** **Authenticated Exploration**
+   (credentials supplied) and **Unauthenticated Exploration** (none) both
+   require approved scope and RoE (`01` §2.3, `01` §30).
+6. **Ten QA categories only** — smoke · functional · UI · forms ·
+   authentication · navigation · API, plus dashboard / table / visual
+   **OPTIONAL — DISABLED BY DEFAULT**. Functional covers positive · boundary ·
+   business-rule · **CRUD except Delete** · state-transition. Delete affordances
+   are discovered, never exercised (`PLAYBOOK` §5, `16` §44).
+7. **`attackSurface` is permanently `NOT_PRODUCED`.** Wave W7-E is not
+   authorized for qa-automation (Ownership Matrix, W8 / C1).
+
+## Still fully in force in the preserved body
+
+The 21-state machine · the 16 phases · §3 ownership resolution · §5 phase
+dispatch · **§5A Evidence → Evidence Quality → Framework Confidence** (`02` §21
+sole authority, weights unchanged) · §5B artifact ownership and identity ·
+§7 invariants · §7A validation tiers · §9 authorization-first, artifact
+preservation, ownership preservation, "introduce nothing new", and the
+`NOT DEMONSTRATED` / `BLOCKED` / `NOT PRODUCED` reporting vocabulary.
+
+---
+
 <!-- PRESERVED VERBATIM. This is the standalone execution entry point as it stood at
      the completion of W6 (SKILL.md sha256 ab2f8330...015065). During tool integration
      the top-level SKILL.md was restructured into a communitytools-compliant ROUTER.
@@ -7,11 +94,13 @@
      Explorer scope migration — removal of security/ZAP/OWASP, accessibility/axe-core,
      performance/Lighthouse, responsive, and cross-browser (Firefox/WebKit) references;
      visual marked optional/disabled; Authenticated/Unauthenticated Exploration
-     terminology — the operational contract below is retained unchanged. -->
+     terminology — the operational contract below is retained unchanged.
+     One factual repair: 18 links to docs/ were written relative to the skill root
+     and did not resolve from reference/; they now read ../docs/. Target unchanged. -->
 
 ---
 name: qa-automation
-description: Enterprise QA automation engineer for web apps — given any website URL, crawl and map the application, detect components, generate production-grade Playwright + TypeScript tests (smoke, functional, UI, forms, auth, navigation, API; dashboards and tables optional; visual optional/disabled initially), execute them on Chromium, retry and self-heal broken locators, capture full failure diagnostics, and produce HTML/Markdown/JSON/JUnit reports with AI root-cause analysis. Use when asked to build a Playwright test suite, automate E2E/regression testing, set up a Page Object Model framework, or generate tests for a web application.
+description: Enterprise QA automation engineer for web apps — given any website URL, crawl and map the application, detect components, generate production-grade Playwright + TypeScript tests (smoke, functional, forms, auth, navigation, tables, dashboards, API, accessibility via axe-core, visual, responsive, cross-browser, Lighthouse performance, tiered security via ZAP passive proxy + OWASP Top 10 mapping), execute them, retry and self-heal broken locators, capture full failure diagnostics, and produce HTML/Markdown/JSON/JUnit reports with AI root-cause analysis. Use when asked to build a Playwright test suite, automate E2E/regression testing, set up a Page Object Model framework, or generate tests for a web application.
 ---
 
 # AI Enterprise QA Automation Engineer — Execution Entry Point
@@ -86,8 +175,8 @@ plans, artifacts or recommendations.
 
 | Document | Role |
 |---|---|
-| [01_Master_Architecture.md](docs/01_Master_Architecture.md) | **Highest architectural authority.** Vision, principles, components, lifecycle (§16), state machine (§17), gates (§15, §26), ownership matrix reference (§37), engine registry (§38), cache service (§39), artifact separation (§40), dependency architecture (§41), governance (§42) |
-| [Architecture_Ownership_Matrix.md](docs/Architecture_Ownership_Matrix.md) | **Governance contract.** 37 capabilities → one owner each · 14 canonical datasets → one producer each · cache regions · decision, coverage, risk, confidence, scheduling ownership |
+| [01_Master_Architecture.md](../docs/01_Master_Architecture.md) | **Highest architectural authority.** Vision, principles, components, lifecycle (§16), state machine (§17), gates (§15, §26), ownership matrix reference (§37), engine registry (§38), cache service (§39), artifact separation (§40), dependency architecture (§41), governance (§42) |
+| [Architecture_Ownership_Matrix.md](../docs/Architecture_Ownership_Matrix.md) | **Governance contract.** 37 capabilities → one owner each · 14 canonical datasets → one producer each · cache regions · decision, coverage, risk, confidence, scheduling ownership |
 
 ## Required Engines — Normative
 
@@ -95,103 +184,15 @@ Absence of any of these is a hard failure.
 
 | # | Document | Owns |
 |---|---|---|
-| 02 | [02_Decision_Engine.md](docs/02_Decision_Engine.md) | **Sole decision authority.** Engineering decisions · Risk · Framework Confidence · Policy · Conflict resolution |
-| 03 | [03_Discovery_Engine.md](docs/03_Discovery_Engine.md) | Discovery · Runtime discovery |
-| 04 | [04_Knowledge_Graph.md](docs/04_Knowledge_Graph.md) | **Canonical application model.** Knowledge Graph · Graph versioning · Graph diffing |
-| 05 | [05_Test_Planning_Engine.md](docs/05_Test_Planning_Engine.md) | Test Plan · Test strategy · **Canonical coverage** · Dependency planning · Resource planning · Retry policy |
-| 06 | [06_Test_Generation_Engine.md](docs/06_Test_Generation_Engine.md) | Test generation · Duplicate detection · Incremental generation |
-| 07 | [07_Execution_Engine.md](docs/07_Execution_Engine.md) | **Sole runtime authority.** Execution · Runtime Schedule · Browser management · Worker scheduling · Timeout management |
-| 09 | [09_Reporting_Analytics.md](docs/09_Reporting_Analytics.md) | Reporting · Analytics |
-
-## Optional Engines — Normative When Present
-
-Absence changes **cost or assurance, never correctness** (`01` §16).
-
-| # | Document | Owns | On absence |
-|---|---|---|---|
-| 08 | [08_Self_Healing_Engine.md](docs/08_Self_Healing_Engine.md) | Self-healing · Locator evolution · Healing Candidate Score *(engine-local)* | No healing; failures reported |
-| 10 | [10_AI_Learning_Repository.md](docs/10_AI_Learning_Repository.md) | Learning Database | No historical evidence |
-| 11 | [11_Unified_Test_Intelligence_Engine.md](docs/11_Unified_Test_Intelligence_Engine.md) | Unified Intelligence Projection *(derived)* · **Framework Cache Service** | Consume `04` directly |
-| 12 | [12_Adaptive_Execution_Optimizer.md](docs/12_Adaptive_Execution_Optimizer.md) | Execution Optimization Proposal *(advisory)* · Batch planning · Runtime prediction | `07` executes plan order |
-| 13 | [13_Incremental_Discovery_Engine.md](docs/13_Incremental_Discovery_Engine.md) | Discovery Delta · Fingerprinting | Full discovery |
-| 14 | [14_Confidence_Coverage_Optimizer.md](docs/14_Confidence_Coverage_Optimizer.md) | Coverage Recommendations · Stop-condition recommendation | Full plan executes |
-| 15 | [15_AI_Planning_Review_Engine.md](docs/15_AI_Planning_Review_Engine.md) | Planning Review *(advisory)* | Plan unreviewed, flagged |
-
-## Supporting Documents — Non-Normative Operational Playbooks
-
-Neither is an engine. Neither adds a state, a phase, or any ownership. The Engine
-Registry remains **01–15**.
-
-| Document | Layer | Answers |
-|---|---|---|
-| [16_QA_Execution_Playbook.md](docs/16_QA_Execution_Playbook.md) | Operational QA doctrine | **WHAT** good QA behaviour looks like — environment intelligence, workflow-first validation, evidence standards, runtime adaptation, reporting integrity |
-| [IMPLEMENTATION_PLAYBOOK.md](docs/IMPLEMENTATION_PLAYBOOK.md) | Playwright implementation | **HOW** to build it — scaffold, config, discovery tactics, retry mechanics, hard-won rules, manual mode (§17), health pre-flight (§18) |
-
-Consult both for judgement and tactics. Neither for authority.
+| 02 | [02_Decision_Engine.md](../docs/02_Decision_Engine.md) | **Sole decision authority.** Engineering decisions · Risk · Framework Confidence · Policy · Conflict resolution |
+| 03 | [03_Discovery_Engine.md](../docs/03_Discovery_Engine.md) | Discovery · Runtime discovery |
+| 04 | [04_Knowledge_Graph.md](../docs/04_Knowledge_Graph.md) | **Canonical application model.** Knowledge Graph · Graph versioning · Graph diffing |
+| 05 | [05_Test_Planning_Engine.md](../docs/05_Test_Planning_Engine.md) | Test Plan · Test strategy · **Canonical coverage** · Dependency planning · Resource planning · Retry policy |
+| 06 | [06_Test_Generation_Engine.md](../docs/06_Test_Generation_Engine.md) | Test generation · Duplicate detection · Incremental generation |
+| 07 | [07_Execution_Engine.md](../docs/07_Execution_Engine.md) | **Sole runtime authority.** Execution · Runtime Schedule · Browser management · Worker scheduling · Timeout management |
+| 09 | [09_Reporting_Analytics.md](../docs/09_Reporting_Analytics.md) | Reporting · Analytics |
 
 ---
 
-# 2. Precedence
-
-```
-01_Master_Architecture              ← highest architectural authority
-        ↓                             architecture, principles, lifecycle
-Architecture_Ownership_Matrix       ← governance contract
-        ↓                             who owns what
-02 … 15                             ← engine specifications
-        ↓
-16_QA_Execution_Playbook            ← non-normative: operational doctrine (WHAT)
-IMPLEMENTATION_PLAYBOOK             ← non-normative: implementation (HOW)
-        ↓
-SKILL.md                            ← orchestration only (WHEN)
-```
-
-- `01` SHALL take precedence over every other document.
-- The **Matrix** governs *ownership allocation only*. It does not define architecture.
-- Where an engine document conflicts with `01`, **`01` wins**.
-- Where an engine document conflicts with the Matrix on *who owns what*, **the Matrix wins** until `01` is amended.
-- Where the Matrix conflicts with an architectural principle in `01`, **`01` wins** and the Matrix is defective.
-- Where two engine documents conflict, **the lower number wins**.
-- Neither playbook overrides a numbered document. If one appears to, that playbook is defective.
-- **This file overrides nothing.**
-- No document authorises skipping a lifecycle stage or a mandatory quality gate.
-
----
-
-# 3. Ownership Resolution
-
-**This file never resolves ownership.** When ownership is unclear:
-
-1. Read `Architecture_Ownership_Matrix.md` — 37 capabilities, 14 canonical datasets.
-2. If the Matrix is silent or ambiguous, read `01` §37 and §42.
-3. If both are silent, **stop and report**. Do not infer an owner.
-
-## Two Authorities Only
-
-```
-02 Decision Engine   →  decides WHAT happens
-07 Execution Engine  →  decides HOW it runs at runtime
-```
-
-Every other engine produces knowledge, plans, artifacts, or recommendations.
-None decides. None executes.
-
-## Routing Table — Every Operation Has One Destination
-
-| Operation | Routes to |
-|---|---|
-| Any decision · risk · Framework Confidence · policy · conflict | **02** |
-| Any knowledge operation · graph read, version, diff | **04** |
-| Any planning operation · canonical coverage · dependencies · retry policy | **05** |
-| Any generation operation · regeneration scope · duplicate detection | **06** |
-| Any runtime execution · scheduling · browsers · workers · timeouts | **07** |
-| Any healing operation · locator history | **08** |
-| Any reporting operation · analytics | **09** |
-| Any learning operation · historical evidence | **10** |
-| Cache storage, eviction, TTL *(region semantics stay with the region owner)* | **11** |
-| Optimization advice · batch plan · runtime prediction | **12** |
-| Change detection · fingerprinting | **13** |
-| Coverage optimization · stop recommendation | **14** |
-| Plan review | **15** |
-| Operational judgement — *how should a QA engineer behave here?* | **16** |
-| Implementation tactics — *how do I write this in Playwright?* | **PLAYBOOK** |
+<!-- nav -->
+*part 1 of 7  ·  [part 2](execution-entry-point-02.md) →*  ·  [reference index](INDEX.md)
