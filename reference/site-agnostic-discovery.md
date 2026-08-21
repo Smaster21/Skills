@@ -105,46 +105,21 @@ is focusable **or** has `cursor: pointer`; activate it and diff the link set.
 Elements that are pointer-interactive but not keyboard-reachable are a genuine
 accessibility defect of the target — **record that fact**, and still use them.
 
-Probe on **every sampled route**, not just the entry page: a module's own tabs
-usually exist only on that module's pages.
+### Accessibility is a reported result, not only a targeting problem
 
----
+The accessible-name walk and the label-coverage ratio also measure a **defect of
+the target**: a control with no accessible name is announced by assistive
+technology as unlabelled. Reporting only `UN_TARGETABLE` reports the symptom that
+inconveniences the suite and withholds the one that affects users.
 
-## Locator strategy ladder
+What to report, and the boundary that keeps it inside `Rule 21`:
+[`accessibility-observations.md`](accessibility-observations.md).
 
-Build candidates in this order, most durable first:
+## Locators
 
-1. `data-testid` / `data-test` / `data-cy`
-2. ARIA role + accessible name
-3. `label` association
-4. `name` / `id` attribute
-5. **Label-scoped**: locate the field group by its label text, then the control
-   within it — the only strategy that survives repeated placeholders
-6. `placeholder`
-7. Text content (buttons and links only)
-
-**Structural paths (`nth-of-type` chains) are an identity key, never a locator.**
-
-### The gate is unchanged, and absolute
-
-Probe every candidate live, **in the auth state its test will run in**. Keep only
-those resolving to exactly one element. A pruned candidate is recorded with its
-failing count.
-
-### Intent, not availability — the false-pass rule
-
-> When a planned case names a target ("the Employee Name filter"), it must bind to
-> a verified locator whose **accessible name matches that intent**. If none does,
-> **drop the case and record it in the coverage ledger**. Never fall back to
-> "the first verified control on the route".
-
-This rule exists because that fallback produced a **passing test that asserted
-nothing about the field it named** — it drove an unrelated search box while
-reporting coverage of a filter it never touched. A false pass is worse than a
-failure: a failure gets investigated, a false pass ships. Only its sibling test's
-failure exposed it.
-
----
+Candidate construction (the seven-rung ladder, including **label-scoped** and
+**container-scoped**), the single-match gate, and the intent-binding rule that
+prevents a false pass: [`locator-ladder.md`](locator-ladder.md).
 
 ## Traversal — depth-first and exhaustive
 

@@ -177,12 +177,16 @@ partial API capture, unstable environment.
 - [ ] partial API capture reported with `api_capture_status` and a reason
 - [ ] report remains readable when sections are unavailable
 - [ ] identical input produces identical artifact names and locations
+- [ ] **every narrative claim about this run resolves to an artifact of this run** — each pass, defect, skipped engine, gate outcome and named directory exists on disk. No fixed narrative, no event or path carried over from a prior run (`final-report-md.md` → *Narrative sections are derived, never authored*)
 
 **Isolation and safety**
 
 - [ ] no security fields anywhere: no findings, CVSS, exploitability, attack
       priority, security applicability/coverage, security recommendations
 - [ ] no credential, token, cookie, or authorization-header value in any artifact
+
+> **A self-check MUST distinguish a thing from a statement about that thing.** This check wants absence of *asserted* security content, but `final-report-md.md` requires the report to declare it carries none — so a bare substring scan fails the run for obeying its own spec. Judge each match in its clause (negated = compliance), treat a soft-wrap as no boundary, and exclude the check's own report (`suite-gates-extended.md`).
+
 - [ ] sensitive network fields masked; existing masking not weakened
 - [ ] no new security decision logic; security skills and their prompts untouched
 - [ ] existing evidence ingestion still resolves its expected artifacts

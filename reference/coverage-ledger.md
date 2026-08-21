@@ -82,9 +82,38 @@ Reporting (`09`) **SHALL**:
 4. Report a **verified-but-unused** count (elements that passed the locator gate
    and no test references). A large value means the planner, not discovery, is
    the bottleneck.
+5. Report **unexercised framework capability** — the handling this run possesses
+   but never ran, because the target contained nothing to run it against.
 
-A headline figure such as "121 passed" is **incomplete** unless accompanied by
-its ledger. Pass counts describe the suite; the ledger describes the application.
+### Unexercised capability — untested code is unproven code
+
+A population the target simply does not contain (no iframes, no custom choice
+widgets, no tables) yields `discovered: 0`. That is not coverage and it is not a
+gap in the application — it means **this run proved nothing about that handler.**
+
+Record it as its own line, distinct from an exclusion:
+
+```json
+{ "capability": "customChoiceWidgets", "discovered": 0,
+  "state": "NOT_EXERCISED",
+  "consequence": "The click-then-pick widget path did not run on this target. Its correctness is UNPROVEN, not verified." }
+```
+
+`NOT_EXERCISED` is a W7-B absence term and reads exactly as it should: neither pass
+nor fail. It is the difference between *"this works"* and *"this was never tried"* —
+and it is the honest basis for FM-10's validation tier, because a capability that
+has never executed cannot support a portability claim.
+
+## Sampling, review tripwires, and tags
+
+Three planning controls are computed from this ledger and specified in
+[`planning-coverage-controls.md`](planning-coverage-controls.md):
+
+- **Repeated shell controls** — sample across routes with a stated `basis`,
+  never test one route and exclude the rest (FM-2).
+- **Plan review tripwires** — deterministic arithmetic that moves a plan from
+  *unreviewed* to *reviewed with N flags* (Phase 4A).
+- **Test tags** — derived, so the suite is runnable in useful subsets.
 
 ## Artifact
 

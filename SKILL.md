@@ -138,8 +138,8 @@ executor.
 | `quickstart.md` · `discovery-profiling.md` | running end to end; profiling a target |
 | `rules-extended.md` · `execution-lifecycle.md` | Rules 11–25; phase behaviour and gates |
 | `site-agnostic-discovery.md` | discovery, locators, interaction — on any site |
-| `suite-self-validation.md` · `coverage-ledger.md` | proving the suite sound; accounting every artifact |
-| `known-failure-modes.md` | before building any phase |
+| `suite-self-validation.md` · `coverage-ledger.md` | proving the suite sound (Gates A/A2/A3, B/B2, C); accounting every artifact |
+| `known-failure-modes.md` | before building any phase — eleven recorded defects |
 | `w7-api-evidence-contract.md` | anything touching API/network output |
 | `workflow-flows.md` | the target has multi-step flows |
 | `write-operations-and-test-data.md` | before planning a write |

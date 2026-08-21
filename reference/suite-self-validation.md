@@ -51,6 +51,12 @@ Each assertion carries:
 | `measuredValue` | the value actually observed |
 | `scope` | where the measurement is valid — **which route**, which auth state, which trigger state |
 
+An **input value** is a claim about the target too, and carries the same burden:
+`valueSource` citing the measurement it came from. Keep any human explanation in a
+separate `valueRationale` field — **never let prose leak into the value itself**. A
+form posted with `"user@example.invalid (RFC 6761 reserved)"` is not the value that
+was measured, and the test no longer sends what the probe observed.
+
 ### Consequences, by construction
 
 - An endpoint expectation must come from a **replayed response**, so `200` can
@@ -67,7 +73,14 @@ target — for example "HTTP status is a number", "the page has a URL". These ca
 `derivedFrom: "PROTOCOL_INVARIANT"` and must be rare. Anything describing the
 application's behaviour needs a measurement.
 
----
+### Provenance in the metadata is not provenance in the test
+
+Everything above inspects the **assertion**, not whether the emitted test *honours*
+it. A test can cite a real measurement, value and scope and never enter the state it
+was measured in — and this Gate passes it (FM-11). Two further checks close that gap,
+both comparing the **plan against the emitted source**: **A2 interaction-emitted**
+and **A3 trigger-state-entered**, with the no-prose-dispatch rule and the closed
+`interaction.kind` vocabulary: [`suite-gates-extended.md`](suite-gates-extended.md).
 
 ## Gate B — Negative Control (falsifiability)
 
@@ -95,11 +108,18 @@ Record the outcome:
 
 | Result under perturbation | Verdict |
 |---|---|
-| Test **fails** | `FALSIFIABLE` — it is sensitive to what it claims to test |
+| Test **fails** | `FALSIFIABLE` — it *can* fail |
 | Test **passes** | `VACUOUS` — **quarantine it**; it proves nothing |
 
 A `VACUOUS` test SHALL NOT be counted as coverage. It is reported as a suite
 defect and ledgered, never silently kept because it is green.
+
+### Falsifiable is not the same as sensitive
+
+The table above reads **only the perturbed run**. A test that fails *unconditionally*
+also fails when perturbed, so it scores `FALSIFIABLE` while being broken — exactly how
+FM-11 passed this Gate. Sensitivity needs **both** runs and is resolved after
+execution: [`suite-gates-extended.md`](suite-gates-extended.md) → Gate B2.
 
 ### Cost control
 
@@ -122,15 +142,25 @@ Failure text cannot distinguish a wrong expectation from a real defect: an API
 probe, classify `UNCLASSIFIED`. Never default to blaming the target — that is how
 22 suite defects were nearly published as defects in someone's application.
 
----
+### The probe MUST reproduce the test's conditions, not merely its route
+
+A probe is evidence about the target only if it puts the target in the state the
+assertion was measured in — so it MUST replay the failing case's recorded
+`interaction` before re-measuring, not merely re-open `scope.route`. A probe that
+skips the action reproduces the suite's own omission and reports it as the target's
+behaviour (FM-11). Full rule and the `UNCLASSIFIED` fallback:
+[`suite-gates-extended.md`](suite-gates-extended.md) → Gate C.
 
 ## Where these gates run
 
 | Gate | Phase | On failure |
 |---|---|---|
 | A · Assertion provenance | 6 `VALIDATING`, with the compile gate | **FAIL — stops the run.** Poor automation never executes |
+| A2 · Interaction emitted | 6 `VALIDATING`, with Gate A | **FAIL — stops the run.** A dropped interaction is never emitted as a simpler test |
+| A3 · Trigger state entered | 6 `VALIDATING`, with Gate A | **FAIL — stops the run** |
 | B · Negative control | 6 `VALIDATING`, after compile passes | `VACUOUS` tests quarantined and ledgered; suite proceeds without them |
-| C · Classification provenance | 9 `DIAGNOSTICS` | unproven attribution downgraded to `UNCLASSIFIED` |
+| B2 · Sensitivity | 7 → post-execution (needs both runs) | non-`SENSITIVE` reported in its own row; never counted as proven coverage |
+| C · Classification provenance | 9 `DIAGNOSTICS` | unproven attribution downgraded to `UNCLASSIFIED`; a probe that did not replay the interaction is not evidence |
 
 Phase 6 therefore stops being a syntax check and becomes what its name claims:
 validation that the suite is **sound**, not merely that it **parses**.
@@ -143,8 +173,12 @@ Alongside pass/fail and the coverage ledger:
 
 ```
 Assertions            412 total · 412 with provenance · 0 authored
+Interactions          14 planned · 14 emitted · 0 dropped
+Trigger states        412 checked · 0 asserting a state the test never entered
 Negative control      121 tested · 119 FALSIFIABLE · 2 VACUOUS (quarantined)
-Classification        5 failures · 5 evidence-backed · 0 unproven target claims
+Sensitivity           119 SENSITIVE · 0 fails-regardless · sampled 1.00
+Classification        5 failures · 5 evidence-backed (5 with interaction replayed)
+                      · 0 unproven target claims
 ```
 
 A suite with authored assertions or vacuous tests is **not** validated, whatever

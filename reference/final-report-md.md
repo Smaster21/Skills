@@ -40,9 +40,28 @@ claims are outside what this skill measures.
 | 10 | Failed Tests | per failure: ID, title, page/workflow, QA failure category, short explanation, retry history, healing result, final status, evidence available. **No stack-trace dumps** — reference the artifact |
 | 11 | Evidence Summary | screenshots, traces, videos, network captures, raw counts, with references |
 | 12 | Application Exploration Coverage | page/route/workflow/test-execution coverage, and what was **not** covered |
-| 13 | QA Framework Confidence | confidence in discovery, application model, workflow model, generated tests, locators — with reasons |
-| 14 | Limitations & Disclosures | **mandatory** — what could not be explored, why, and the impact on the result |
+| 12b | Accessibility Observations | measured un-named controls (count + routes), label coverage ratio per route, pointer-interactive-but-not-keyboard-reachable controls. **QA findings, in QA categories — no severity score, no security framing** (`site-agnostic-discovery.md`). Where the target names every control, say so |
+| 12c | Plan Review | Phase 4A tripwire flags with their numbers, or `UNREVIEWED` stated plainly (`coverage-ledger.md`) |
+| 13 | QA Framework Confidence | confidence in discovery, application model, workflow model, generated tests, locators — with reasons. An unavailable term states its **distance from availability** (`evidence-and-confidence.md`), never a bare refusal |
+| 14 | Limitations & Disclosures | **mandatory** — what could not be explored, why, and the impact on the result. Includes **`NOT_EXERCISED` capability** (handling the target gave nothing to run) and, where any pipeline defect was found and fixed mid-run, that defect **derived from the run's own artifacts** |
 | 15 | Overall QA Conclusion | plain-language takeaway for a QA engineer |
+
+### Narrative sections are derived, never authored
+
+Any section describing **what happened in this run** — defects found, passes
+superseded, engines skipped, gates triggered — MUST be generated from the artifacts
+on disk. Fixed prose describing a previous run's events is a reporting-integrity
+defect of the same class as an authored assertion (`Rule 4`).
+
+> A report once carried hardcoded narrative describing two defects as "found during
+> the run" that had in fact been fixed in an earlier development cycle, cited a
+> superseded-pass directory that did not exist in that run, and **omitted the defect
+> that had actually occurred**. It compiled, it read fluently, and it was false.
+
+Concretely: count superseded passes by reading the directory; name skipped engines
+from their recorded status; describe a defect from the validation and diagnostic
+records that captured it. If the artifact is absent, the section says so — a
+narrative is never carried over from a prior run, and never written from memory.
 
 Example executive-summary voice:
 

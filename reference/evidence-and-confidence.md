@@ -72,6 +72,41 @@ reweight, duplicate, or relocate):
 | `INSUFFICIENT_EVIDENCE` | Evidence Quality + the decision | `PLAYBOOK` §19 · `02` §5.5 |
 | `MISSING_TERM` | Framework Confidence, naming each absent term | `02` §21 · `02` §5.5 |
 
+### An unavailable term MUST report its distance from availability
+
+Naming the term is necessary but not sufficient. `REFUSED — NO_HISTORY` reads like a
+fault; in most runs it is simply a term that has not accumulated yet. Report the
+**progress toward availability** alongside the state:
+
+```
+Historical Reliability : UNAVAILABLE (INSUFFICIENT_HISTORY)
+                         1 of 3 eligible executions recorded for this scope
+                         (recency window W=5, minimumExecutions=3)
+                         → available after 2 further executions of this scope
+```
+
+This distinguishes the two cases that a bare state name conflates:
+
+| Case | Meaning | Action |
+|---|---|---|
+| Accumulating | The store exists, `W` and `minimumExecutions` are configured, history is building | None — report the count and wait |
+| **Configuration gap** | No store resolved for the Execution Scope Identity, or `W` / `minimumExecutions` never configured | **Report as a configuration defect** (FM-8), not as a neutral unavailable measurement |
+
+A term that can *never* become available is a defect. A term that is two runs away
+is not. The report MUST make clear which it is.
+
+### Eligible history includes non-`COMPLETED` terminal states
+
+Every execution persists its **terminal lifecycle state** (`01` §17) and its scope
+identity — `COMPLETED`, `FAILED`, `BLOCKED`, `INTERRUPTED` alike — written at the
+point the state is reached, **not** only on a successful reporting phase.
+
+> Persisting only at the end of reporting means an interrupted run contributes
+> nothing. History then accrues solely from clean runs, so the term arrives late
+> *and* measures a biased sample — reliability computed only over runs that already
+> succeeded. Since Historical Reliability measures **framework lifecycle**
+> reliability, an interrupted run is exactly the signal it exists to capture.
+
 A cold-start scope with no history is a legitimate unavailable state, **not** an
 error, and never halts execution (`10` §7.3).
 

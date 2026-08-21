@@ -173,10 +173,16 @@ held **126 hand-written selectors** for that one application.
 
 ---
 
+## FM-11 · A planned interaction dropped by title-based dispatch — 1 failure, misattributed
+
+The generator chose a case's interaction by pattern-matching its **generated title**. Of two sibling cases on one feature, the differently-phrased one matched nothing, fell through to the plain-route emitter, and its planned `interaction` was **silently discarded**: the emitted test opened the route and asserted a value measured *after* the submit it never made. Every gate passed it — the code compiled, Gate A's provenance was intact while the **body** ignored it, Gate B scored only the perturbed run (which the test failed unperturbed too), and Gate C then blamed the target, its probe re-measuring the route without replaying the interaction — one step before a suite defect was published as someone's application defect.
+
+> **RULE.** Generation dispatches on **structural fields of the plan**, never a title or any generated prose — an explicit `interaction.kind` from a **closed vocabulary of mechanical shapes**, never a business concept. A case whose interaction reaches no emitter **fails loudly** rather than being emitted without it.
+>
+> **RULE.** Every gate MUST compare **two** things; each above passed on one side only. Per `suite-gates-extended.md`: **A2/A3** plan vs emitted source and assertion vs state reached; **B2** perturbed vs normal run; **C** replay before re-measuring, else `UNCLASSIFIED`.
+
+---
+
 ## Reading this list
 
-Nine of these ten produced **passing type checks and a green-looking pipeline**
-while being wrong. Two produced *passing tests* asserting the wrong thing. The
-common thread is that a suite cannot validate itself: only a measurement against
-the live target can distinguish "my expectation was wrong" from "the application
-is broken", and the default assumption must always be the former.
+Ten of these eleven produced **passing type checks and a green-looking pipeline** while being wrong; three produced *passing tests* asserting the wrong thing, and FM-11 a **failing** test blamed on the target. A suite cannot validate itself: only a measurement against the live target distinguishes "my expectation was wrong" from "the application is broken", and the default assumption must always be the former. FM-11's corollary: **a gate inspecting one side of a comparison passes work that contradicts itself.**
