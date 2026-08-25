@@ -25,11 +25,10 @@ with measured confidence, and reports honestly what was and was not covered.
   authentication, navigation, API. Dashboard/table optional; visual disabled.
 - **Target type:** web applications (any framework), in **Unauthenticated
   Exploration** and, when credentials are supplied, **Authenticated Exploration**.
-- **Crawl modes:** *normal QA* (default — repeated route templates are sampled
-  representatively) and **Security Prep Deep Crawl** (`SITE_EXPLORER_MODE=security-prep`
-  — every discovered route instance is crawled within declared caps, so a downstream
-  security skill receives a fuller surface map). Deep crawl changes **discovery depth
-  only**: it grants no authority, relaxes no guard, and still emits QA-only output
+- **Crawl behaviour:** exhaustive, and there is no other mode. **Every discovered
+  route instance** is crawled within the declared `MAX_ROUTE_INSTANCES` ceiling —
+  no sampling, no convergence early-stop, no mode switch. Depth grants no authority:
+  it relaxes no guard and still emits QA-only output
   (`reference/scope-enforcement.md`).
 - **Mount it when:** verifying / regression-testing / building an E2E suite for an
   in-scope web app, or as the defensive counterpart after recon maps a surface.
@@ -105,9 +104,9 @@ re-validation).
 3. **Read-only discovery.** Discovery navigates and opens navigation disclosures.
    Form submission, destructive/write-intent controls, data deletion, account
    creation, payments, authentication bypass, and unmasked secrets all stay
-   outside its boundary — **in every crawl mode**. Deep crawl catalogues a
-   state-changing affordance; it never exercises one. Discovering an endpoint is not a
-   reason to call it.
+   outside its boundary. The crawl catalogues a
+   state-changing affordance; it never exercises one. Discovering an endpoint is
+   not a reason to call it.
 4. **Evidence is observed, and so is every expectation.** Evidence Objects come
    from real execution and each carries a *measured* confidence. The same
    discipline binds what the suite is built from: every assertion cites the

@@ -37,7 +37,6 @@ if the phase writes that artifact, the file loads.
 
 | Phase | If the phase produces… | Then also load |
 |---|---|---|
-| 1 DISCOVERING | a run with `SITE_EXPLORER_MODE=security-prep` | [`scope-enforcement.md`](scope-enforcement.md) *(Tier 0)* → *Site Explorer modes* |
 | 1 DISCOVERING · 3 Verification | any file under `network/` | [`w7-api-evidence-contract.md`](w7-api-evidence-contract.md) |
 | 4 PLANNING | `planning/plan-review.json` | [`planning-coverage-controls.md`](planning-coverage-controls.md) *(already Tier 1)* |
 | 6 VALIDATING · 9 DIAGNOSTICS | `execution/validation.json` or `diagnostics/failures.json` | [`suite-gates-extended.md`](suite-gates-extended.md) *(already Tier 1)* |
@@ -106,9 +105,8 @@ no ZAP / OWASP scanning, and does not participate in the skeptic/validator
 finding-verification loop. Its results are **functional QA results only**,
 recorded in `qa/raw/decision-history.jsonl` and `qa/report/`.
 
-**`SITE_EXPLORER_MODE=security-prep` does not change that.** The mode names the
-*consumer* of the application map, never the content of this skill's output: it deepens
-discovery and nothing else. It adds no finding, no CVSS, no severity, no exploitability
-and no security judgement, and it grants no authority a normal QA run would not have.
-A separate security skill may read `qa/discovery/` and `qa/network/`; producing a
-deeper map does not make this skill one.
+**The exhaustive crawl does not change that.** Crawling every route instance deepens
+*discovery* and nothing else: it adds no finding, no CVSS, no severity, no
+exploitability and no security judgement, and it grants no authority. A separate
+security skill may read `qa/discovery/` and `qa/network/`; producing a fuller map does
+not make this skill one.

@@ -6,7 +6,7 @@
 > report. Deeper contracts are referenced inline; you do not need them to run.
 
 This skill is **defensive QA**. It never exploits, brute-forces, or bypasses
-authentication. Discovery is **read-only** in every crawl mode: it navigates and opens
+authentication. Discovery is **read-only**: it navigates and opens
 navigation menus, but never submits a form and never activates a destructive control.
 
 Three rules override convenience everywhere below:
@@ -67,9 +67,9 @@ touched.
 
 Profile before crawling — measure the target's own conventions — then crawl
 **depth-first and exhaustively**, expanding navigation disclosures where profiling
-showed they reveal routes. Read-only; caps come from configuration only. Repeated route
-instances are **sampled** in normal QA mode and **crawled exhaustively within caps**
-when `SITE_EXPLORER_MODE=security-prep` — depth only, never extra authority
+showed they reveal routes. Read-only; caps come from configuration only. **Every**
+discovered route instance is crawled, within the declared `MAX_ROUTE_INSTANCES`
+ceiling — no sampling, no early stop, and depth grants no extra authority
 (`scope-enforcement.md`). Steps and artifacts: **`discovery-profiling.md`**.
 
 ## 5. Verify locators (Phase 3) — no unverified locator reaches generation
@@ -182,7 +182,7 @@ Emit the evidence chain in the decision records: per-item confidence →
 ## Checkpoints worth noting (the executor logs these)
 
 - Profile complete: shell landmarks, label coverage ratio, choice-control style.
-- Discovery complete: N pages, M candidates, K skipped **with reasons**; route instances per template, and the crawl mode that produced them.
+- Discovery complete: N pages, M candidates, K skipped **with reasons**; route instances crawled per template, and any ceiling that stopped one.
 - Phase-3 gate: candidates verified / pruned.
 - Validation gate: PASS / WARNING / FAIL.
 - Execution: passed / failed / skipped, reconciled against the runner.
@@ -196,5 +196,5 @@ Emit the evidence chain in the decision records: per-item confidence →
 - Never cap silently — no URL cap, no per-category cap, no `slice(n)`. A limit is a declared exclusion with a reason, or it does not happen.
 - Never hand-write an application-specific selector, class, URL prefix or literal.
 - Never bind a case to a locator that does not match its stated intent.
-- Never present a single-browser run, one with unaccounted artifacts, or a sampled instance crawl, as complete.
+- Never present a single-browser run, one with unaccounted artifacts, or one whose ceiling excluded instances, as complete.
 - Never `sudo`, `install-deps`, or modify the host environment.

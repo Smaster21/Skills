@@ -32,7 +32,7 @@ Account for every population:
 | Form controls (incl. un-nameable ones) | `03` discovery |
 | Choice widgets (native and custom) | `03` profiling + discovery |
 | Actionable controls (buttons, submits, menu items) | `03` discovery |
-| Route instances, per template | `03` discovery (five states, below) |
+| Route instances, per template | `03` discovery (four states, below) |
 | Forms | `03` discovery |
 | Tables | `03` discovery |
 | API endpoints, per method | `03` network observation |
@@ -56,7 +56,7 @@ An exclusion carries one of these. Free text alone cannot be counted or audited.
 | `NOT_AUTHORIZED` | Outside scope, RoE, or the browser matrix |
 | `ENVIRONMENT_BLOCKED` | Target refused or failed to serve it during the run |
 | `POLICY_EXCLUDED` | Deliberate plan decision — **must** carry a stated consequence |
-| `INSTANCE_SKIPPED_BY_SAMPLING` | An instance of a route template whose representative sample was already satisfied — **must** carry the sampling `basis` and the instance count |
+| `UNSAFE_TO_NAVIGATE` | A discovered route the structural filters rejected before navigation — **must** carry the filter that rejected it |
 | `INSTANCE_EXCLUDED_BY_POLICY` | An instance excluded by an explicit plan decision — **must** carry the reason and its consequence |
 | `INSTANCE_EXCLUDED_BY_CAP` | An instance beyond the declared crawl ceiling (`MAX_ROUTE_INSTANCES` / `maxInstancesPerTemplate`) — **must** carry the bound reached |
 
@@ -64,28 +64,28 @@ An exclusion carries one of these. Free text alone cannot be counted or audited.
 is therefore unverified (for example: *"create/update business rules are
 UNTESTED and must not be read as passing"*).
 
-## Route templates: five states, never one
+## Route templates: every instance, or a named reason
 
 A catalogue route repeats one template across many ids. Collapsing every instance into
 one crawled page is **not** dedupe — it is a silent cap wearing dedupe's clothes. A run
 that crawls one detail page and drops the other 33 has tested a template, not an
-application; reporting only `TEMPLATE_TESTED` is what makes "25 pages crawled" read like
-coverage of 64 reachable routes.
+application; reporting only `TEMPLATE_TESTED` makes "25 pages" read like 64 routes.
 
-Every route instance terminates in exactly one of **five** states, reported separately:
+Every route instance terminates in exactly one of **four** states, reported separately:
 
-| State | Meaning | Valid in |
-|---|---|---|
-| `TEMPLATE_TESTED` | the route template has at least one crawled representative | both modes |
-| `INSTANCE_TESTED` | this specific instance was crawled and measured | both modes |
-| `INSTANCE_SKIPPED_BY_SAMPLING` | the representative sample was satisfied; accounted with its sampling basis | **normal QA only** |
-| `INSTANCE_EXCLUDED_BY_POLICY` | an explicit plan decision excluded it; accounted with its reason | both modes |
-| `INSTANCE_EXCLUDED_BY_CAP` | the declared crawl ceiling was reached; accounted with the bound | both modes |
+| State | Meaning |
+|---|---|
+| `TEMPLATE_TESTED` | the route template has at least one crawled representative |
+| `INSTANCE_TESTED` | this specific instance was crawled and measured |
+| `INSTANCE_EXCLUDED_BY_CAP` | the declared crawl ceiling was reached; accounted with the bound |
+| `INSTANCE_EXCLUDED_BY_POLICY` | an explicit plan decision excluded it; accounted with its reason |
 
-`INSTANCE_SKIPPED_BY_SAMPLING` is **invalid under Security Prep Deep Crawl**
-(`scope-enforcement.md` → *Site Explorer modes*): there, an instance goes uncrawled only
-for the cap, the origin boundary, an unsafe-to-navigate filter, an explicit policy, or
-an already-visited URL.
+> **`INSTANCE_SKIPPED_BY_SAMPLING` is retired and MUST NOT be emitted.** One crawl
+> behaviour exists — exhaustive within the declared ceiling — so "the sample was
+> satisfied" is not a reason an instance may go uncrawled. The permitted reasons are the
+> ceiling, `OUT_OF_ORIGIN`, `UNSAFE_TO_NAVIGATE`, an explicit policy, or an
+> already-visited URL — and the last is not an exclusion, because the same URL is one
+> route counted once (`scope-enforcement.md` → *Crawl behaviour*).
 
 ### The denominator is DISTINCT routes, never encounters
 
@@ -101,18 +101,18 @@ alongside, labelled as encounters.
 ### Instance coverage is reported per template
 
 ```
-Routes (distinct)  discovered 64  tested 33  sampled-out 27  cap-excluded 4  unaccounted 0
-  per template        instances  tested  basis
-  /item/{id}                 33       5  signature converged after 3 repeats
-  /vendor/{name}              8       8  every instance structurally distinct
+Routes (distinct)  discovered 64  tested 60  cap-excluded 4  unaccounted 0
+  per template        instances  tested  note
+  /item/{id}                 33      33  every instance crawled
+  /group/{id}                 7       7  every instance crawled
+  /vendor/{name}             12       8  ceiling MAX_ROUTE_INSTANCES=8 reached (4 cap-excluded)
 ```
 
 A report **SHALL NOT** describe template coverage as instance coverage, and **SHALL
-NOT** claim full instance coverage unless every discovered instance was crawled.
-
-Under Security Prep Deep Crawl it additionally states that this was a **deep discovery
-run intended to improve downstream security-skill surface mapping**, and that the deeper
-map carries no additional authority — output stays QA-only (`Rule 21`).
+NOT** claim full instance coverage unless every discovered instance was crawled. Where a
+ceiling excluded instances, it names the ceiling and the count. The crawl is exhaustive
+by design, so any shortfall is a **measured** limit, never a sampling choice — and the
+deeper map carries no additional authority: output stays QA-only (`Rule 21`).
 
 ## Caps are forbidden
 

@@ -10,6 +10,10 @@
 
 ## Repeated shell controls — sample across routes, never test one and exclude the rest
 
+This is about **which routes' shell controls are asserted**, not about which routes are
+crawled: the crawl visits every discovered instance and never samples
+(`discovery-profiling.md` → *Route instances*).
+
 An application shell repeats the same controls on every route. Testing all of them is
 waste: one run held **464 navigation-affordance instances**, and asserting the same
 eight links on 58 routes buys almost nothing.
@@ -50,13 +54,13 @@ The `basis` field is what makes this a sample rather than a guess, and the
 for cost is an exclusion; a sample chosen from structure is a method — and only the
 second may be reported as coverage of the population.**
 
-## Repeated route instances — owned by Phase 1
+## Repeated route instances — owned by Phase 1, and never sampled
 
-Route-instance sampling and frontier seeding are **discovery** behaviour, not planning
-behaviour, and both are mode-gated. They live with the crawl that performs them:
-[`discovery-profiling.md`](discovery-profiling.md) → *Route instances* and *Security Prep
-Deep Crawl*. Planning consumes their output through the ledger, and **must not** re-derive
-a sampling decision the crawl already recorded.
+Route-instance crawling and frontier seeding are **discovery** behaviour, not planning
+behaviour. They live with the crawl that performs them:
+[`discovery-profiling.md`](discovery-profiling.md) → *Route instances*. Every discovered
+instance is crawled within the declared ceiling; planning consumes that through the
+ledger and **must not** re-derive a skip the crawl did not make.
 
 ## Plan review tripwires — arithmetic, not opinion (Phase 4A)
 

@@ -31,13 +31,13 @@ Crawl **depth-first**: finish a page's entire subtree before its next sibling.
 Expand navigation disclosures when profiling proved they reveal routes. **No URL
 cap, no `slice(n)`.**
 
-Repeated instances of one route template are sampled by **measured structural
-convergence**, never collapsed to a single page, and every instance terminates in one
-of the four route states — `TEMPLATE_TESTED` · `INSTANCE_TESTED` ·
-`INSTANCE_SKIPPED_BY_SAMPLING` · `INSTANCE_EXCLUDED_BY_POLICY`. Seed the frontier with
-same-origin path literals found in the page's own scripts (`discoverySource: js`),
-filtered structurally before navigation so the read-only boundary holds. Both rules:
-**`planning-coverage-controls.md`**; the ledger contract: **`coverage-ledger.md`**.
+**Every discovered instance of a repeated route template is crawled**, up to the
+declared `MAX_ROUTE_INSTANCES` ceiling — never sampled, never collapsed to one page.
+Each instance terminates in one of the four route states: `TEMPLATE_TESTED` ·
+`INSTANCE_TESTED` · `INSTANCE_EXCLUDED_BY_CAP` · `INSTANCE_EXCLUDED_BY_POLICY`. Seed the
+frontier with same-origin path literals found in the page's own scripts
+(`discoverySource: js`), filtered structurally before navigation so the read-only
+boundary holds. Ledger contract: **`coverage-ledger.md`**.
 
 ```
 qa/discovery/discovery-report.json     pages (depth, parent, discovered-via), network, skipped+reason
@@ -52,61 +52,41 @@ activate a control whose accessible name matches destructive/write intent
 Expected: every page carries `depth`, `parent`, and the affordance it was found
 through. Menu entries with no resolvable destination are recorded `UNREACHABLE`.
 
-### Route instances — sampled in QA mode, exhausted in deep-crawl mode
+### Route instances — every one of them, within the declared ceiling
 
-A catalogue template (`/item/{id}`) yields many instances. Crawling all of them is
-waste in normal QA; crawling **one** is a silent cap that reports a template as an
-application. Normal QA avoids both by stopping when the target stops saying anything
-new — measured, not guessed. Deep crawl does not stop early at all.
-
-**Structural signature.** Per crawled page, over its *structure only* — HTTP status,
-per-route landmark counts, the sorted set of **distinct** control identity keys, form
-count with methods. Title and outbound links are excluded: they are **content**, differ
-on every instance by construction, and including them guarantees the signature never
-repeats. Using the *distinct* key set, not the multiset, is what makes a listing of
-three items and one of nine compare equal — the difference is cardinality of content.
-
-**Convergence** (normal QA only). Crawl instances until the structural signature has
-repeated `S` consecutive times, subject to a floor and a ceiling:
+A catalogue template (`/item/{id}`) yields many instances. Crawling **one** and calling
+the template covered is a silent cap that reports a template as an application, so this
+skill does not do it: **every discovered instance is crawled**, up to the declared
+`MAX_ROUTE_INSTANCES` ceiling. There is no sampling behaviour and no mode that enables
+one (`scope-enforcement.md` → *Crawl behaviour*).
 
 ```
-NORMAL QA MODE
-  crawl the instance when   crawled < minInstancesPerTemplate
-                       or   (crawled < maxInstancesPerTemplate and repeatStreak < S)
-  otherwise                 INSTANCE_SKIPPED_BY_SAMPLING  (converged)
-  at the ceiling            INSTANCE_EXCLUDED_BY_POLICY   (declared bound)
-
-SECURITY PREP DEEP CRAWL          (SITE_EXPLORER_MODE=security-prep)
-  crawl the instance when   crawled < MAX_ROUTE_INSTANCES
-  at the ceiling            INSTANCE_EXCLUDED_BY_CAP      (declared exclusion)
-  convergence early-stop    DISABLED — a repeated structural signature is evidence
-                            about STRUCTURE, and deep crawl is collecting CONTENT
-  INSTANCE_SKIPPED_BY_SAMPLING is NOT a valid outcome in this mode
+crawl the instance when   crawled < MAX_ROUTE_INSTANCES
+at the ceiling            INSTANCE_EXCLUDED_BY_CAP   (declared exclusion, per instance)
+early-stop on repeat      NOT ALLOWED — a repeated structural signature is evidence
+                          about STRUCTURE; the crawl is collecting CONTENT
 ```
 
-In deep-crawl mode an instance goes uncrawled for exactly five reasons, each recorded
-with its machine-readable state: the **cap** was reached, the **origin boundary**
-applies, the route is **unsafe to navigate** by the structural filters below, an
-**explicit policy** excludes it, or the **URL was already visited**. Nothing else.
-
-`minInstancesPerTemplate` prevents a single-page sample. `maxInstancesPerTemplate` is
-the infinite-crawl guard, and it is a **declared exclusion with a reason**, never a
-silent truncation. All three values are configuration, recorded in the report with the
-sample they produced.
-
-A template whose instances are genuinely different never converges, so it keeps being
-crawled up to the ceiling — which is the correct behaviour, not an escape hatch.
+An instance goes uncrawled for **exactly five** reasons, each recorded with its
+machine-readable state: the **ceiling** was reached, the **origin boundary** applies,
+the route is **unsafe to navigate** by the structural filters below, an **explicit
+policy** excludes it, or the **URL was already visited** — and an already-visited URL is
+the same route counted once, not an exclusion. Nothing else may stop an instance.
 
 **Template dedupe is loop protection, never a coverage decision.** Its only job is to
-stop a crawl that would otherwise never terminate. Treating "this template has been
-seen" as permission to skip the rest of a catalogue is what collapses an application to
-one page, and in deep-crawl mode it is prohibited outright. Both modes are defined in
-[`scope-enforcement.md`](scope-enforcement.md) → *Site Explorer modes*; deep crawl
-grants **no** additional authority, and every safety control is unchanged.
+stop a crawl that would otherwise never terminate. "This template has been seen" is
+never permission to skip the rest of a catalogue.
 
-> This rule exists because a run collapsed 33 product-detail instances and 6 category
-> instances to one page each, reported `ROUTE_TEMPLATE_ALREADY_CRAWLED` — a reason
-> outside this document's closed vocabulary — and presented the result as complete.
+**Structural signature — reported, never a skip reason.** Per crawled page, over its
+*structure only*: HTTP status, per-route landmark counts, the sorted set of **distinct**
+control identity keys, form count with methods. Title and outbound links are excluded as
+content. The signature tells a reader whether a template's instances are structurally
+identical, which is a useful measured fact; it **must not** gate crawling, and a repeat
+never ends the crawl.
+
+`MAX_ROUTE_INSTANCES` is the infinite-crawl guard and a **declared exclusion with a
+reason**, never a silent truncation. Its value is configuration and is reported with the
+instance counts it produced.
 
 ### Routes are reached from more than links
 

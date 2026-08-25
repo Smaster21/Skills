@@ -15,8 +15,8 @@
     claim (`reference/coverage-ledger.md`). A **declared** ceiling that emits one
     ledger entry per excluded item, carrying the bound that stopped it, is an
     exclusion and not a cap — the prohibition is on silent truncation. Route
-    instances additionally carry their own five states and, under
-    `SITE_EXPLORER_MODE=security-prep`, may not be excluded by sampling at all
+    instances are crawled **exhaustively** within that ceiling and may never be
+    excluded by sampling; `INSTANCE_SKIPPED_BY_SAMPLING` is retired
     (`reference/scope-enforcement.md`, `reference/discovery-profiling.md`).
 13. **Intent over availability.** A planned case binds only to a verified locator
     whose accessible name matches its stated intent. If none matches, DROP the

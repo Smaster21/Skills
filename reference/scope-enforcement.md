@@ -19,8 +19,7 @@ Reads context from environment variables only; no prompt ever blocks a run.
 | `ALLOW_SAFE_WRITES` | ❌ | `1` permits non-`GET` requests **proven** to change no observable state. Absent ⇒ `GET` only |
 | `ALLOW_WRITE_TESTS` | ❌ | `1` permits state-mutating tests on **reversible** surfaces only — synthetic data, run-scoped markers, mandatory cleanup, disclosed mutation. Absent or `0` ⇒ no write test is planned |
 | `ALLOW_IRREVERSIBLE_SURFACES` | ❌ | Comma-separated **surface ids** explicitly opted in, each of which has no inverse affordance. Never a wildcard. Absent ⇒ every irreversible surface is ledgered, not run |
-| `SITE_EXPLORER_MODE` | ❌ | `security-prep` selects **Security Prep Deep Crawl** (below). Absent or any other value ⇒ **normal QA mode** |
-| `MAX_ROUTE_INSTANCES` | ❌ | Deep-crawl instance ceiling per template. Absent ⇒ the mode default. Reaching it is a **declared exclusion**, never a silent stop |
+| `MAX_ROUTE_INSTANCES` | ❌ | Per-template instance ceiling for the exhaustive crawl. Absent ⇒ the built-in default. Reaching it is a **declared exclusion**, never a silent stop |
 | `CI` | ❌ | Fewer workers, more retries |
 
 \* At least one of `BASE_URL` / `TARGET` / `TARGET_DOMAIN` must resolve to a URL.
@@ -82,48 +81,58 @@ substituted from a previous measurement. This is `Rule 4` — *evidence is obser
 never authored* — applied to configuration: a target that was not supplied for **this**
 run has not been authorized for this run.
 
-## Site Explorer modes — depth is configuration, authority is not
+## Crawl behaviour — exhaustive by default, and there is no other mode
 
-Two crawl modes. They differ in **how much of the application is visited**, and in
-nothing else. Every safety control is identical in both.
+This skill has **one** crawl behaviour: visit **every discovered route instance**, up to
+the declared `MAX_ROUTE_INSTANCES` ceiling. There is no sampling mode, no mode switch,
+and no configuration that reduces instance coverage.
 
-| | Normal QA *(default)* | **Security Prep Deep Crawl** (`SITE_EXPLORER_MODE=security-prep`) |
-|---|---|---|
-| Repeated route instances | representative sample; early stop on structural convergence | **every discovered instance**, up to `MAX_ROUTE_INSTANCES` |
-| Template dedupe | a sampling method | **loop protection only** — never permission to skip a meaningful instance |
-| Convergence early-stop | enabled | **disabled** |
-| Un-crawled instance | `INSTANCE_SKIPPED_BY_SAMPLING` | `INSTANCE_EXCLUDED_BY_CAP` / `_BY_POLICY` — sampling is not a valid reason |
-| Read-only guard · write ladder · masking · API evidence · failure honesty | active | **active, unchanged** |
+| Rule | Meaning |
+|---|---|
+| Every discovered instance is crawled | up to the declared ceiling, and no further reason to stop exists |
+| Template dedupe is **loop protection only** | its sole job is to stop a crawl that would never terminate; "this template has been seen" is **never** permission to skip an instance |
+| Convergence early-stop is **not allowed** | a repeated structural signature is evidence about *structure*; the crawl is collecting *content*, so it never ends the crawl |
+| `INSTANCE_SKIPPED_BY_SAMPLING` is **retired** | it is not a valid outcome and MUST NOT be emitted (`coverage-ledger.md`) |
 
-### What deep crawl is, and what it is not
+An instance goes uncrawled for **exactly five** reasons, each recorded with its
+machine-readable state and nothing else:
 
-Deep crawl is **discovery**. It visits more routes and records more affordances so a
-downstream skill receives a fuller application map. It is **not** permission to act.
+| Reason | Ledger state |
+|---|---|
+| the declared ceiling was reached | `INSTANCE_EXCLUDED_BY_CAP` |
+| outside the authorized origin | `OUT_OF_ORIGIN` |
+| unsafe to navigate by the structural filters | `UNSAFE_TO_NAVIGATE` |
+| an explicit policy decision excludes it | `INSTANCE_EXCLUDED_BY_POLICY` |
+| the URL was already visited | not an exclusion — the same URL is **one** route, counted once |
 
-> **`security-prep` grants no authority whatsoever.** It does not relax the read-only
+### Deeper discovery is not broader authority
+
+A deeper crawl visits more routes and records more affordances so that this run — and
+any skill that later reads its output — has a fuller map. It is **not** permission to act.
+
+> **Crawl depth grants no authority whatsoever.** It does not relax the read-only
 > boundary, does not imply `ALLOW_SAFE_WRITES`, `ALLOW_WRITE_TESTS` or any irreversible
-> surface id, and never accepts a wildcard. A target still requires the same
-> authorization, scope and RoE it would require in normal QA mode. Discovering an
-> endpoint is not a reason to call it.
+> surface id, and never accepts a wildcard. The target requires exactly the same
+> authorization, scope and RoE it always did. **Discovering an endpoint is not a reason
+> to call it.**
 
-| In `security-prep`, DO | In `security-prep`, still DO NOT |
+| DO | Still DO NOT |
 |---|---|
 | visit every discovered route instance within caps | submit a form, unless the write ladder allows that surface |
 | record forms, parameters, APIs, links, buttons | activate a state-changing affordance without authorization |
-| record a state-changing affordance **as a finding of structure** | call a discovered endpoint merely because it was discovered |
+| record a state-changing affordance **as a fact of structure** | call a discovered endpoint merely because it was discovered |
 | follow disclosures that profiling proved reveal routes | create, update or delete anything the ladder has not opened |
 
 A state-changing affordance is **catalogued, not exercised**: recording that
 `GET /basket/add/{id}` exists is discovery; issuing it is a write, and the write ladder
-decides that, in both modes alike.
+alone decides that.
 
-### It does not make this a security skill
+### Depth does not make this a security skill
 
-`security-prep` names the **consumer** of the map, never the content of this skill's
-output. Output remains QA-only (`Rule 21`): no vulnerability finding, no CVSS, no
+Output remains QA-only (`Rule 21`): no vulnerability finding, no CVSS, no
 exploitability, no severity, no security coverage, and no judgement that a target is or
 is not secure. A separate security skill may read `qa/discovery/` and `qa/network/`;
-this skill does not become one by producing a deeper map.
+producing a fuller map does not make this skill one.
 
 ## Scope enforcement — before any network action (non-negotiable)
 
