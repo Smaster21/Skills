@@ -50,6 +50,14 @@ The `basis` field is what makes this a sample rather than a guess, and the
 for cost is an exclusion; a sample chosen from structure is a method — and only the
 second may be reported as coverage of the population.**
 
+## Repeated route instances — owned by Phase 1
+
+Route-instance sampling and frontier seeding are **discovery** behaviour, not planning
+behaviour, and both are mode-gated. They live with the crawl that performs them:
+[`discovery-profiling.md`](discovery-profiling.md) → *Route instances* and *Security Prep
+Deep Crawl*. Planning consumes their output through the ledger, and **must not** re-derive
+a sampling decision the crawl already recorded.
+
 ## Plan review tripwires — arithmetic, not opinion (Phase 4A)
 
 Phase 4A `PLANNING_REVIEW` is advisory and often skipped, which leaves a plan's
@@ -73,11 +81,88 @@ rendered in the report. Flags are **advisory** — `SKILL.md` states 4A is advis
 a tripwire never blocks a run. Its job is to move the plan from *unreviewed* to
 *reviewed, with N flags a reader can weigh*.
 
-> Prefer these tripwires to a judgement-based reviewer. They are deterministic, so
-> identical input produces identical flags (`PLAYBOOK` §19), they need no second
-> model, and they cannot invent a concern. A reviewer that reasons freely over 892
-> decisions introduces exactly the authored-judgement problem `Rule 4` exists to
-> keep out of this skill.
+### The two layers, and which one is authoritative
+
+Phase 4A is **two layers with different authority**, and the split is already fixed by
+the architecture — not invented here:
+
+| Layer | Owner | Authority | Output |
+|---|---|---|---|
+| **Deterministic plan validation** | **`05` §32** | the objective **safety** layer | `PASS` · `WARNING` · `FAIL` |
+| **AI planning review** | **`15`** | **advisory only** | `PASS` · `WARNING` · `FAIL` |
+| Approve / reject / withhold | **`02`** | the only decider | — |
+
+`docs/15` §2 states the boundary itself: the AI engine SHALL NOT *"Approve, reject, or
+block a Test Plan (owned by 02)"* and SHALL NOT *"Perform Plan Validation (owned by 05
+§32)"*. Its `FAIL` is a **Recommend Rejection**, and *"does not itself prevent
+generation."*
+
+> **A deterministic finding is measured evidence and is therefore append-only.** The AI
+> layer may explain a finding, argue it is expected, or rank it — it may **never**
+> remove, downgrade, re-score, or rewrite one. A consumer that drops a finding because
+> the AI called it acceptable is non-conformant. This is `Rule 4` applied to the review
+> itself: an interpretation never becomes a measurement.
+
+Both layers write into **one** artifact, `planning/plan-review.json` — deterministic
+findings under `deterministic.findings`, the advisory review under `aiReview`. Separate
+keys, so neither can overwrite the other.
+
+### How the AI layer is invoked — no AI client, by design
+
+The skill contains **no model client and no SDK**, and must not acquire one: the
+executing agent *is* the reviewer. Phase 4A is therefore an instruction, not a library
+call:
+
+1. Deterministic validation runs first and always, writing `deterministic` with
+   `executed: true`. It never depends on the AI layer being available.
+2. `aiReview.state` is initialised `NOT_REQUESTED`. It is **never** pre-filled and never
+   defaulted to a pass.
+3. The executor — reading this file at Phase 4A — reviews the deterministic findings
+   together with `coverage/coverage-summary.json`, `planning/test-plan.json`, the
+   declared exclusions and the write-gate configuration, then writes `aiReview` back
+   into the same artifact.
+
+The review answers exactly six questions, and its output MUST keep the three registers
+apart:
+
+```
+MEASURED FACT     — a value copied from an artifact, with its path
+AI INTERPRETATION — a judgement about that value, labelled as such
+RECOMMENDATION    — a suggested action for a QA engineer
+```
+
+> An interpretation presented as a measured fact is the same defect as an authored
+> assertion (Gate A). Every `MEASURED FACT` cites the artifact and path it came from;
+> anything without a citation is an interpretation and is labelled one.
+
+Questions: (1) is the plan reasonable · (2) is each deterministic finding **expected**
+or **suspicious** · (3) what coverage gaps matter · (4) are exclusions justified by
+configuration or policy · (5) does discovery, planning and intended execution agree ·
+(6) what should a QA engineer look at first.
+
+Per-finding, the review adds an `assessment` of `EXPECTED` or `SUSPICIOUS` plus its
+reasoning — **alongside** the finding, never replacing its `status`.
+
+### Absence is a state, never a pass
+
+| `aiReview.state` | Means |
+|---|---|
+| `NOT_REQUESTED` | Phase 4A's advisory half did not run |
+| `UNAVAILABLE` | requested, but no reviewer was available — with the reason |
+| `COMPLETED` | a review was actually performed and is present |
+
+`UNAVAILABLE` and `NOT_REQUESTED` are **never** rendered as approval, and a missing
+review never upgrades the deterministic verdict. Fabricating a review — or defaulting
+it to `PASS` — is the `Rule 4` violation this whole section exists to prevent.
+
+### Why deterministic first
+
+These tripwires are preferred to a judgement-based reviewer as the *safety* layer: they
+are deterministic, so identical input yields identical flags (`PLAYBOOK` §19), they need
+no second model, and they cannot invent a concern. A reviewer reasoning freely over
+hundreds of exclusions introduces exactly the authored-judgement problem `Rule 4` keeps
+out of this skill. The AI layer adds what arithmetic cannot: whether a measured number
+is *expected here*.
 
 ## Test tags — the suite must be runnable in useful subsets
 

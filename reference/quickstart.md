@@ -1,13 +1,13 @@
 # QA Automation — Quick Start
 
 > You received this as `SKILL_FILES`. Follow it directly. You have `OUTPUT_DIR`,
-> `TARGET` (or `TARGET_DOMAIN` / `BASE_URL`), and `CHAIN_CONTEXT`. This is the
-> minimal executor playbook: scope → profile → discover → verify → plan →
-> generate → execute → report. Deeper contracts are referenced inline but you do not need them to run.
+> `TARGET` (or `TARGET_DOMAIN` / `BASE_URL`), and `CHAIN_CONTEXT`. This is the minimal
+> executor playbook: scope → profile → discover → verify → plan → generate → execute →
+> report. Deeper contracts are referenced inline; you do not need them to run.
 
 This skill is **defensive QA**. It never exploits, brute-forces, or bypasses
-authentication. Discovery is **read-only**: it navigates and opens navigation
-menus, but never submits a form and never activates a destructive control.
+authentication. Discovery is **read-only** in every crawl mode: it navigates and opens
+navigation menus, but never submits a form and never activates a destructive control.
 
 Three rules override convenience everywhere below:
 **(1)** no application-specific selector is ever hand-written;
@@ -66,9 +66,11 @@ touched.
 ## 3–4. Profile the target, then discover
 
 Profile before crawling — measure the target's own conventions — then crawl
-**depth-first and exhaustively**, expanding navigation disclosures where
-profiling showed they reveal routes. Read-only; caps come from configuration
-only. Full steps and expected artifacts: **`discovery-profiling.md`**.
+**depth-first and exhaustively**, expanding navigation disclosures where profiling
+showed they reveal routes. Read-only; caps come from configuration only. Repeated route
+instances are **sampled** in normal QA mode and **crawled exhaustively within caps**
+when `SITE_EXPLORER_MODE=security-prep` — depth only, never extra authority
+(`scope-enforcement.md`). Steps and artifacts: **`discovery-profiling.md`**.
 
 ## 5. Verify locators (Phase 3) — no unverified locator reaches generation
 
@@ -109,13 +111,30 @@ selectOption only for native <select>)
 Also plan `business-rule` cases from validation messages captured in their
 triggered state, and `CRUD-except-Delete` where the environment permits writes —
 if it does not, that is a `POLICY_EXCLUDED` ledger entry **with its consequence
-stated**, not an omission.
+stated**, not an omission. Writes escalate on one **per-surface** ladder; each
+irreversible surface needs its own opt-in (`write-operations-and-test-data.md`).
 
 ```
 qa/planning/test-plan.json
 qa/raw/decision-history.jsonl → decision-000N.json
 qa/coverage/ + qa/diagnostics/coverage-ledger.json    ← every population accounted, unaccounted = 0
 ```
+
+## 6a. Review the plan (Phase 4A) — deterministic first, then advisory
+
+Two layers, different authority. **The deterministic half always runs** — arithmetic over
+the ledger, needing nothing but the plan. It writes `qa/planning/plan-review.json` with
+`deterministic.verdict` (`PASS`/`WARNING`/`FAIL`) and one finding per fired tripwire
+(`rule`, `status`, `measuredValue`, `threshold`, `reason`, `affectedArea`).
+
+Then review **yourself** — you are the reviewer; the skill ships no model client. Read
+those findings plus `coverage/coverage-summary.json` and `planning/test-plan.json`, then
+write `aiReview` into the **same** file, keeping `MEASURED FACT` / `AI INTERPRETATION` /
+`RECOMMENDATION` apart and marking each finding `EXPECTED` or `SUSPICIOUS`.
+> **Never remove, downgrade, or rewrite a deterministic finding** — explain it, but its
+> `status` stands. Cannot review? Set `aiReview.state` to `UNAVAILABLE` with a reason;
+> never fabricate one, never default to `PASS`. `WARNING` does not stop the run — 4A is
+> advisory; only `02` withholds approval (`planning-coverage-controls.md`).
 
 ## 6b. Generate (Phase 5) + validate (Phase 6)
 
@@ -163,21 +182,19 @@ Emit the evidence chain in the decision records: per-item confidence →
 ## Checkpoints worth noting (the executor logs these)
 
 - Profile complete: shell landmarks, label coverage ratio, choice-control style.
-- Discovery complete: N pages (max depth D), M candidates, K skipped **with reasons**.
+- Discovery complete: N pages, M candidates, K skipped **with reasons**; route instances per template, and the crawl mode that produced them.
 - Phase-3 gate: candidates verified / pruned.
 - Validation gate: PASS / WARNING / FAIL.
 - Execution: passed / failed / skipped, reconciled against the runner.
 - Ledger: discovered / tested / excluded per population; `unaccounted` MUST be 0.
-- Verified-but-unused count (high = the planner, not discovery, is the bottleneck).
-- Any target defect vs suite defect vs environment artifact.
+- Verified-but-unused count; any target vs suite vs environment defect.
 
 ## Never
 
 - Never run against an out-of-scope or unauthorized target.
 - Never fabricate a result, a locator, or a confidence value.
-- Never cap anything — no URL cap, no per-category cap, no `slice(n)`. A limit is
-  a declared exclusion with a reason, or it does not happen.
+- Never cap silently — no URL cap, no per-category cap, no `slice(n)`. A limit is a declared exclusion with a reason, or it does not happen.
 - Never hand-write an application-specific selector, class, URL prefix or literal.
 - Never bind a case to a locator that does not match its stated intent.
-- Never present a single-browser run, or one with unaccounted artifacts, as complete.
+- Never present a single-browser run, one with unaccounted artifacts, or a sampled instance crawl, as complete.
 - Never `sudo`, `install-deps`, or modify the host environment.

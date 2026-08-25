@@ -7,26 +7,24 @@
 
 A real run reported **121 tests passed** while, unreported:
 
-- 37 of 58 discovered API endpoints were dropped by a `slice(0, 20)` nobody
-  declared;
-- 116 of 169 verified elements were never referenced by any test;
-- every control lacking `id`, `name`, and `placeholder` was discarded during
-  extraction without a word;
+- 37 of 58 discovered API endpoints dropped by a `slice(0, 20)` nobody declared;
+- 116 of 169 verified elements never referenced by any test;
+- every control lacking `id`, `name` and `placeholder` discarded silently;
 - one test **passed** while driving an element other than the one it named.
 
-None of that was visible in the report. The run looked complete because the only
-numbers shown were about tests that ran, never about work that vanished. A suite
-that cannot say what it skipped cannot be trusted about what it covered.
+None of that was visible in the report: the only numbers shown were about tests that
+ran, never about work that vanished. A suite that cannot say what it skipped cannot be
+trusted about what it covered.
 
 ## The rule
 
 > **Every artifact discovered on the target MUST terminate in exactly one of two
-> states: `TESTED`, or `EXCLUDED` with a machine-readable reason.**
-> A third state — silently absent — is a defect of the run, not a detail.
+> states: `TESTED`, or `EXCLUDED` with a machine-readable reason.** A third state —
+> silently absent — is a defect of the run, not a detail.
 
 ## Ledger scope
 
-Account for every one of these populations:
+Account for every population:
 
 | Population | Source |
 |---|---|
@@ -34,18 +32,18 @@ Account for every one of these populations:
 | Form controls (incl. un-nameable ones) | `03` discovery |
 | Choice widgets (native and custom) | `03` profiling + discovery |
 | Actionable controls (buttons, submits, menu items) | `03` discovery |
+| Route instances, per template | `03` discovery (five states, below) |
 | Forms | `03` discovery |
 | Tables | `03` discovery |
 | API endpoints, per method | `03` network observation |
 | Assertion targets | `03` §29 triggered-state probes |
 
-For each population record: `discovered`, `tested`, `excluded`, and an
-`unaccounted` count that **must be zero**.
+Per population record `discovered`, `tested`, `excluded`, and an `unaccounted` count
+that **must be zero**.
 
 ## Exclusion reasons — closed vocabulary
 
-An exclusion carries one of these. Free text alone is not acceptable, because
-free text cannot be counted or audited.
+An exclusion carries one of these. Free text alone cannot be counted or audited.
 
 | Reason | Meaning |
 |---|---|
@@ -58,38 +56,93 @@ free text cannot be counted or audited.
 | `NOT_AUTHORIZED` | Outside scope, RoE, or the browser matrix |
 | `ENVIRONMENT_BLOCKED` | Target refused or failed to serve it during the run |
 | `POLICY_EXCLUDED` | Deliberate plan decision — **must** carry a stated consequence |
+| `INSTANCE_SKIPPED_BY_SAMPLING` | An instance of a route template whose representative sample was already satisfied — **must** carry the sampling `basis` and the instance count |
+| `INSTANCE_EXCLUDED_BY_POLICY` | An instance excluded by an explicit plan decision — **must** carry the reason and its consequence |
+| `INSTANCE_EXCLUDED_BY_CAP` | An instance beyond the declared crawl ceiling (`MAX_ROUTE_INSTANCES` / `maxInstancesPerTemplate`) — **must** carry the bound reached |
 
 `POLICY_EXCLUDED` additionally requires a `consequence` field saying plainly what
 is therefore unverified (for example: *"create/update business rules are
 UNTESTED and must not be read as passing"*).
 
+## Route templates: five states, never one
+
+A catalogue route repeats one template across many ids. Collapsing every instance into
+one crawled page is **not** dedupe — it is a silent cap wearing dedupe's clothes. A run
+that crawls one detail page and drops the other 33 has tested a template, not an
+application; reporting only `TEMPLATE_TESTED` is what makes "25 pages crawled" read like
+coverage of 64 reachable routes.
+
+Every route instance terminates in exactly one of **five** states, reported separately:
+
+| State | Meaning | Valid in |
+|---|---|---|
+| `TEMPLATE_TESTED` | the route template has at least one crawled representative | both modes |
+| `INSTANCE_TESTED` | this specific instance was crawled and measured | both modes |
+| `INSTANCE_SKIPPED_BY_SAMPLING` | the representative sample was satisfied; accounted with its sampling basis | **normal QA only** |
+| `INSTANCE_EXCLUDED_BY_POLICY` | an explicit plan decision excluded it; accounted with its reason | both modes |
+| `INSTANCE_EXCLUDED_BY_CAP` | the declared crawl ceiling was reached; accounted with the bound | both modes |
+
+`INSTANCE_SKIPPED_BY_SAMPLING` is **invalid under Security Prep Deep Crawl**
+(`scope-enforcement.md` → *Site Explorer modes*): there, an instance goes uncrawled only
+for the cap, the origin boundary, an unsafe-to-navigate filter, an explicit policy, or
+an already-visited URL.
+
+### The denominator is DISTINCT routes, never encounters
+
+A route linked from thirty pages is **one** route; counting encounters inflates `discovered` and deflates every percentage computed from it.
+
+> A real run reported `routes discovered: 199, tested: 25`. The target had **64**
+> distinct routes; 174 of the 199 were repeat *encounters* of 39 URLs. Both the 199 and
+> the 12.6% derived from it were wrong, in opposite directions.
+
+`discovered` counts distinct normalized URLs; encounter counts may be reported
+alongside, labelled as encounters.
+
+### Instance coverage is reported per template
+
+```
+Routes (distinct)  discovered 64  tested 33  sampled-out 27  cap-excluded 4  unaccounted 0
+  per template        instances  tested  basis
+  /item/{id}                 33       5  signature converged after 3 repeats
+  /vendor/{name}              8       8  every instance structurally distinct
+```
+
+A report **SHALL NOT** describe template coverage as instance coverage, and **SHALL
+NOT** claim full instance coverage unless every discovered instance was crawled.
+
+Under Security Prep Deep Crawl it additionally states that this was a **deep discovery
+run intended to improve downstream security-skill surface mapping**, and that the deeper
+map carries no additional authority — output stays QA-only (`Rule 21`).
+
 ## Caps are forbidden
 
-There is **no** URL cap, no per-category cap, no `slice(n)`, no "first N".
+There is **no** URL cap, no per-category cap, no `slice(n)`, no "first N". If a limit
+is genuinely unavoidable it is not a cap — it is an exclusion, declared per item with a
+reason. A truncation that produces no ledger entry is the failure this document exists
+to stop.
 
-If some limit is genuinely unavoidable, it is not a cap — it is an exclusion, and
-it is declared per item with a reason. A truncation that produces no ledger entry
-is the specific failure this document exists to stop.
+That is what `INSTANCE_EXCLUDED_BY_CAP` is, and why it does not contradict the rule
+above: the ceiling is visible configuration, it emits one ledger entry **per instance**
+carrying the bound, and the report states that bound. The prohibition is on a **silent**
+truncation, never a **declared** one.
 
 ## The gate
 
 Reporting (`09`) **SHALL**:
 
 1. Refuse to present a run as complete while `unaccounted > 0` in any population.
-2. Publish `tested` / `discovered` per population, not just test pass counts.
-3. Surface `NO_INTENT_MATCH` and `UN_TARGETABLE` prominently — those are the
-   states that previously hid real coverage loss.
-4. Report a **verified-but-unused** count (elements that passed the locator gate
-   and no test references). A large value means the planner, not discovery, is
-   the bottleneck.
-5. Report **unexercised framework capability** — the handling this run possesses
-   but never ran, because the target contained nothing to run it against.
+2. Publish `tested` / `discovered` per population, not just pass counts.
+3. Surface `NO_INTENT_MATCH` and `UN_TARGETABLE` prominently — those hid real loss.
+4. Report **verified-but-unused** (passed the locator gate, referenced by no test); a
+   large value means the planner, not discovery, is the bottleneck.
+5. Report **unexercised framework capability** — handling this run possesses but never
+   ran, because the target contained nothing to run it against.
 
 ### Unexercised capability — untested code is unproven code
 
-A population the target simply does not contain (no iframes, no custom choice
-widgets, no tables) yields `discovered: 0`. That is not coverage and it is not a
-gap in the application — it means **this run proved nothing about that handler.**
+A population the target does not contain (no iframes, no custom choice widgets, no
+tables) yields `discovered: 0`. That is neither coverage nor an application gap — it
+means **this run proved nothing about that handler.**
 
 Record it as its own line, distinct from an exclusion:
 
@@ -99,26 +152,22 @@ Record it as its own line, distinct from an exclusion:
   "consequence": "The click-then-pick widget path did not run on this target. Its correctness is UNPROVEN, not verified." }
 ```
 
-`NOT_EXERCISED` is a W7-B absence term and reads exactly as it should: neither pass
-nor fail. It is the difference between *"this works"* and *"this was never tried"* —
-and it is the honest basis for FM-10's validation tier, because a capability that
-has never executed cannot support a portability claim.
+`NOT_EXERCISED` is a W7-B absence term: neither pass nor fail. It is the difference
+between *"this works"* and *"this was never tried"*, and the honest basis for FM-10's
+validation tier — a capability that never executed cannot support a portability claim.
 
 ## Sampling, review tripwires, and tags
 
-Three planning controls are computed from this ledger and specified in
-[`planning-coverage-controls.md`](planning-coverage-controls.md):
-
-- **Repeated shell controls** — sample across routes with a stated `basis`,
-  never test one route and exclude the rest (FM-2).
-- **Plan review tripwires** — deterministic arithmetic that moves a plan from
-  *unreviewed* to *reviewed with N flags* (Phase 4A).
-- **Test tags** — derived, so the suite is runnable in useful subsets.
+Computed from this ledger, specified in
+[`planning-coverage-controls.md`](planning-coverage-controls.md): **repeated shell
+controls** (sample across routes with a stated `basis`, never test one and exclude the
+rest — FM-2), **plan review tripwires** (Phase 4A arithmetic), and **test tags**
+(derived, so the suite runs in useful subsets). Route-instance sampling and the crawl
+modes are Phase 1 behaviour: [`discovery-profiling.md`](discovery-profiling.md).
 
 ## Artifact
 
-Write `qa/coverage/coverage-summary.json`, and render its summary in every report
-format alongside the pass/fail totals.
+Write `qa/coverage/coverage-summary.json`; render its summary in every report format alongside the pass/fail totals.
 
 ```
 {
@@ -147,6 +196,5 @@ API (POST)  discovered   1   tested   0   excluded  1    unaccounted 0
 Verified but unused: 0
 ```
 
-Read against that, "121 passed" is no longer a claim about the application — it
-is a claim about the suite, and the ledger says how much of the application the
-suite actually reached.
+Read against that, "121 passed" is a claim about the suite, not the application — and
+the ledger says how much of the application the suite actually reached.

@@ -73,6 +73,15 @@ target — for example "HTTP status is a number", "the page has a URL". These ca
 `derivedFrom: "PROTOCOL_INVARIANT"` and must be rare. Anything describing the
 application's behaviour needs a measurement.
 
+### A generated artifact may not embed the target
+
+Alongside the assertion checks, Phase 6 scans **every generated file** — runner config,
+fixtures, page objects, specs — for an embedded target origin. A literal scheme+host
+that also appears in the measured evidence is a **FAIL**, not a convenience: the run
+must read its target from the environment and abort when it is absent
+(`scope-enforcement.md`). This is the same rule as target-agnosticism, applied to
+configuration rather than to locators.
+
 ### Provenance in the metadata is not provenance in the test
 
 Everything above inspects the **assertion**, not whether the emitted test *honours*

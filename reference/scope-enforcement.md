@@ -16,13 +16,114 @@ Reads context from environment variables only; no prompt ever blocks a run.
 | `SCOPE_FILE` | ⛒ | If present, every target validated against it before navigation |
 | `ROE_FILE` | ⛒ | If present, honor time-based restrictions / blackout / expiry |
 | `TEST_USER` / `TEST_PASS` | ❌ | Present → **Authenticated Exploration**; absent → **Unauthenticated Exploration** (narrows scope, never stops). Scope/authorization is mandatory in both modes |
+| `ALLOW_SAFE_WRITES` | ❌ | `1` permits non-`GET` requests **proven** to change no observable state. Absent ⇒ `GET` only |
+| `ALLOW_WRITE_TESTS` | ❌ | `1` permits state-mutating tests on **reversible** surfaces only — synthetic data, run-scoped markers, mandatory cleanup, disclosed mutation. Absent or `0` ⇒ no write test is planned |
+| `ALLOW_IRREVERSIBLE_SURFACES` | ❌ | Comma-separated **surface ids** explicitly opted in, each of which has no inverse affordance. Never a wildcard. Absent ⇒ every irreversible surface is ledgered, not run |
+| `SITE_EXPLORER_MODE` | ❌ | `security-prep` selects **Security Prep Deep Crawl** (below). Absent or any other value ⇒ **normal QA mode** |
+| `MAX_ROUTE_INSTANCES` | ❌ | Deep-crawl instance ceiling per template. Absent ⇒ the mode default. Reaching it is a **declared exclusion**, never a silent stop |
 | `CI` | ❌ | Fewer workers, more retries |
 
 \* At least one of `BASE_URL` / `TARGET` / `TARGET_DOMAIN` must resolve to a URL.
 
+The three write controls form **one escalating ladder**, each implying the one above
+it, and none is a second competing gate (`write-operations-and-test-data.md`):
+
+```
+(default)                      → READ only
+ALLOW_SAFE_WRITES=1            → + non-GET that changed nothing, proven per request
+ALLOW_WRITE_TESTS=1            → + create/update on surfaces with an inverse
+ALLOW_IRREVERSIBLE_SURFACES=…  → + only the named surfaces, one id at a time
+```
+
+Application-delete **feature** tests are enabled by no value of any of these.
+
 Credentials arrive via env only and are **masked before any persistence**
 (`01` §30, `07` §41). No secret reaches a log, report, screenshot, trace, or
 artifact.
+
+### The target is read from the environment — never defaulted, anywhere
+
+`BASE_URL` resolution happens **once**, at Phase 0, and a missing value **aborts**:
+
+```bash
+BASE_URL="${BASE_URL:-$TARGET}"
+[ -z "$BASE_URL" ] && { echo "[ABORT] no BASE_URL/TARGET"; exit 2; }
+```
+
+That rule binds **every artifact the run generates**, not just the shell:
+
+> **No generated file may embed a default, fallback, or previously-measured target.**
+> A runner config, fixture, page object, helper or spec MUST read the target from the
+> environment and **fail when it is absent**. A construct of the form
+> `process.env.BASE_URL ?? "<some measured origin>"` is a defect the moment it is
+> written, even though it works on the target it was measured against.
+
+Why this is not a style preference:
+
+- The measured origin is correct **only for the run that measured it.** Baking it in
+  makes the artifact silently correct-looking on a target it was never validated for.
+- A later execution with `BASE_URL` unset then produces a **complete, green report
+  about the wrong application** — and nothing in the run signals it, because every
+  assertion passes against the site the fallback points at.
+- Where runs are dispatched per job — one target per job, many targets over time — a
+  stale fallback is a **cross-target contamination** path: job B silently exercises
+  job A's application.
+
+Correct form, in any generated file:
+
+```
+target = <read from environment>
+if target is absent → abort with a named error; never continue with a literal
+```
+
+The same prohibition applies to `SCOPE_FILE`, `ROE_FILE` and credentials: an absent
+input is a **named state that stops or narrows the run** (`Rule 6`), never a value
+substituted from a previous measurement. This is `Rule 4` — *evidence is observed,
+never authored* — applied to configuration: a target that was not supplied for **this**
+run has not been authorized for this run.
+
+## Site Explorer modes — depth is configuration, authority is not
+
+Two crawl modes. They differ in **how much of the application is visited**, and in
+nothing else. Every safety control is identical in both.
+
+| | Normal QA *(default)* | **Security Prep Deep Crawl** (`SITE_EXPLORER_MODE=security-prep`) |
+|---|---|---|
+| Repeated route instances | representative sample; early stop on structural convergence | **every discovered instance**, up to `MAX_ROUTE_INSTANCES` |
+| Template dedupe | a sampling method | **loop protection only** — never permission to skip a meaningful instance |
+| Convergence early-stop | enabled | **disabled** |
+| Un-crawled instance | `INSTANCE_SKIPPED_BY_SAMPLING` | `INSTANCE_EXCLUDED_BY_CAP` / `_BY_POLICY` — sampling is not a valid reason |
+| Read-only guard · write ladder · masking · API evidence · failure honesty | active | **active, unchanged** |
+
+### What deep crawl is, and what it is not
+
+Deep crawl is **discovery**. It visits more routes and records more affordances so a
+downstream skill receives a fuller application map. It is **not** permission to act.
+
+> **`security-prep` grants no authority whatsoever.** It does not relax the read-only
+> boundary, does not imply `ALLOW_SAFE_WRITES`, `ALLOW_WRITE_TESTS` or any irreversible
+> surface id, and never accepts a wildcard. A target still requires the same
+> authorization, scope and RoE it would require in normal QA mode. Discovering an
+> endpoint is not a reason to call it.
+
+| In `security-prep`, DO | In `security-prep`, still DO NOT |
+|---|---|
+| visit every discovered route instance within caps | submit a form, unless the write ladder allows that surface |
+| record forms, parameters, APIs, links, buttons | activate a state-changing affordance without authorization |
+| record a state-changing affordance **as a finding of structure** | call a discovered endpoint merely because it was discovered |
+| follow disclosures that profiling proved reveal routes | create, update or delete anything the ladder has not opened |
+
+A state-changing affordance is **catalogued, not exercised**: recording that
+`GET /basket/add/{id}` exists is discovery; issuing it is a write, and the write ladder
+decides that, in both modes alike.
+
+### It does not make this a security skill
+
+`security-prep` names the **consumer** of the map, never the content of this skill's
+output. Output remains QA-only (`Rule 21`): no vulnerability finding, no CVSS, no
+exploitability, no severity, no security coverage, and no judgement that a target is or
+is not secure. A separate security skill may read `qa/discovery/` and `qa/network/`;
+this skill does not become one by producing a deeper map.
 
 ## Scope enforcement — before any network action (non-negotiable)
 

@@ -43,6 +43,7 @@ claims are outside what this skill measures.
 | 12b | Accessibility Observations | measured un-named controls (count + routes), label coverage ratio per route, pointer-interactive-but-not-keyboard-reachable controls. **QA findings, in QA categories — no severity score, no security framing** (`site-agnostic-discovery.md`). Where the target names every control, say so |
 | 12c | Plan Review | Phase 4A tripwire flags with their numbers, or `UNREVIEWED` stated plainly (`coverage-ledger.md`) |
 | 13 | QA Framework Confidence | confidence in discovery, application model, workflow model, generated tests, locators — with reasons. An unavailable term states its **distance from availability** (`evidence-and-confidence.md`), never a bare refusal |
+| 13b | Write Surfaces & Mutation | per surface: id, classification (`SAFE_WRITE` · `STATE_CREATING` · `IRREVERSIBLE`), the control that gated it, whether it ran, and the **residue accounting**. For every **declined** irreversible surface, the record it *would* have created. For every one that **ran**, the records left permanently, with markers. `Records cleaned` never includes an irreversible record (`write-operations-and-test-data.md`) |
 | 14 | Limitations & Disclosures | **mandatory** — what could not be explored, why, and the impact on the result. Includes **`NOT_EXERCISED` capability** (handling the target gave nothing to run) and, where any pipeline defect was found and fixed mid-run, that defect **derived from the run's own artifacts** |
 | 15 | Overall QA Conclusion | plain-language takeaway for a QA engineer |
 

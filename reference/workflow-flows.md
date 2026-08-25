@@ -126,8 +126,9 @@ language- and domain-bound; HTTP and HTML semantics are not.
 | Class | Structural test | Gate |
 |---|---|---|
 | **Reversible** | activation issues only `GET`; no form submission | runs by default |
-| **State-creating** | submits a form whose method is not `GET`, or issues a non-`GET` request | runs when `ALLOW_WRITE_TESTS=1`, with synthetic data and cleanup |
-| **Irreversible** | non-`GET` **and** any of: no inverse affordance exists on the resulting page · a confirmation dialog gates it · operator config names it | each requires its own explicit opt-in; **off by default** |
+| **Safe-write** | non-`GET`, and a **measured** before/after state comparison shows no observable change | runs when `ALLOW_SAFE_WRITES=1` |
+| **State-creating** | non-`GET` that changes state, **and** an inverse affordance exists for the created record | runs when `ALLOW_WRITE_TESTS=1`, with synthetic data and cleanup |
+| **Irreversible** | non-`GET` **and** any of: no inverse affordance exists on the resulting page · a confirmation dialog gates it · operator config names it | that **surface id** must appear in `ALLOW_IRREVERSIBLE_SURFACES`; **off by default** |
 
 The "no inverse affordance" test is the portable one: a create is reversible when
 the resulting page offers a delete or undo; a step with no way back is
@@ -135,6 +136,31 @@ irreversible whatever it is called, in any language.
 
 Where a control's method cannot be established, it is classed **state-creating**
 and gated. An unknown is never assumed safe.
+
+### Safe-write is proven, never assumed
+
+A human reads `POST /search` as harmless; a machine cannot, and guessing breaks the
+read-only guarantee. Promotion to **safe-write** requires a measurement kept as
+evidence: fingerprint the observable state (listing counts, row identities, totals),
+issue the request once, fingerprint again. Identical ⇒ `SAFE_WRITE`. Different, or
+unresolved, ⇒ `STATE_CREATING` and gated — an unknown is never assumed safe.
+
+The fingerprint uses only values this run already measures. No path, verb or word
+classifies anything: a `POST` that searches and one that registers are separated by
+**what changed**, not by what they are called (FM-9).
+
+### The gate is per surface, never global
+
+`ALLOW_WRITE_TESTS=1` unlocks the **reversible** surfaces — those whose created record
+can be removed again — and leaves each irreversible one gated behind its own id.
+
+> A single global switch cannot honour "create synthetic data, then clean it up",
+> because on most targets some surfaces have no inverse. Enabling them together
+> guarantees residue while appearing to promise none.
+
+Discovery therefore records per write surface: its id, its method, whether an inverse
+affordance was found, and **what one execution would create**. Planning gates each
+surface independently (`write-operations-and-test-data.md`).
 
 No text lexicon is used for classification. An English word list misses a
 localised target and encodes one business domain into a framework meant for any

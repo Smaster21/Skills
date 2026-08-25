@@ -21,20 +21,39 @@ the Tier 1 row for the phase you are entering. This keeps an executor at roughly
 | Phase | Load | ~Lines |
 |---|---|---:|
 | 0 CONFIGURING | `rules-extended.md` | 67 |
-| 0B PROFILING · 1 DISCOVERING | `discovery-profiling.md` + `site-agnostic-discovery.md` + `workflow-flows.md` | 455 |
+| 0B PROFILING · 1 DISCOVERING | `discovery-profiling.md` + `site-agnostic-discovery.md` + `workflow-flows.md` | 568 |
 | 2 BUILDING_GRAPH · 3 Locator Verification | `locator-ladder.md` (+ `site-agnostic-discovery.md`, already loaded) | 70 |
 | 4 PLANNING | `coverage-ledger.md` + `planning-coverage-controls.md` + `write-operations-and-test-data.md` + `workflow-flows.md` | 560 |
 | 5 GENERATING · 6 VALIDATING | `suite-self-validation.md` + `suite-gates-extended.md` | 285 |
 | 7 EXECUTING · 9 DIAGNOSTICS | `known-failure-modes.md` + `suite-gates-extended.md` (Gate C) | 290 |
 | 10 REPORTING | `final-report-md.md` + `final-report-json.md` + `output-and-scope.md` + `accessibility-observations.md` | 435 |
 
-**Tier 2 — on demand only**
+**Tier 1 conditional — load when the phase produces the named artifact**
+
+These were previously "on demand", which made loading a judgement call. A run
+produced 26 API endpoints and the API contract was **never opened**, because nothing
+made the trigger mechanical. Each row below is now a **checklist item of its phase**:
+if the phase writes that artifact, the file loads.
+
+| Phase | If the phase produces… | Then also load |
+|---|---|---|
+| 1 DISCOVERING | a run with `SITE_EXPLORER_MODE=security-prep` | [`scope-enforcement.md`](scope-enforcement.md) *(Tier 0)* → *Site Explorer modes* |
+| 1 DISCOVERING · 3 Verification | any file under `network/` | [`w7-api-evidence-contract.md`](w7-api-evidence-contract.md) |
+| 4 PLANNING | `planning/plan-review.json` | [`planning-coverage-controls.md`](planning-coverage-controls.md) *(already Tier 1)* |
+| 6 VALIDATING · 9 DIAGNOSTICS | `execution/validation.json` or `diagnostics/failures.json` | [`suite-gates-extended.md`](suite-gates-extended.md) *(already Tier 1)* |
+| 10 REPORTING | `raw/confidence-chain.json` | [`evidence-and-confidence.md`](evidence-and-confidence.md) |
+| 10 REPORTING | an accessibility measurement (un-named controls > 0) | [`accessibility-observations.md`](accessibility-observations.md) *(already Tier 1)* |
+| 4 PLANNING | any write surface classified non-`GET` | [`write-operations-and-test-data.md`](write-operations-and-test-data.md) *(already Tier 1)* |
+
+A conditional row is **not optional**: producing the artifact without having loaded
+its contract means the artifact was written against an unread specification, and its
+conformance is `UNVERIFIED` — state that rather than implying it was satisfied.
+
+**Tier 2 — genuinely on demand**
 
 | File | Load when |
 |---|---|
-| [`w7-api-evidence-contract.md`](w7-api-evidence-contract.md) | touching API/network output or the AIC |
-| [`evidence-and-confidence.md`](evidence-and-confidence.md) | producing or auditing the confidence chain |
-| [`execution-lifecycle.md`](execution-lifecycle.md) | a phase's behaviour is unclear |
+| [`execution-lifecycle.md`](execution-lifecycle.md) | the step contract, halting conditions, or a phase's behaviour is needed |
 | `execution-entry-point-01..07.md` | a reviewer needs the full historical contract |
 
 A "Mandatory" label inside a reference file means **mandatory for the phase(s)
@@ -58,7 +77,7 @@ that load it**, per the table above — it does not mean every run loads every f
 | [`workflow-flows.md`](workflow-flows.md) | Target has multi-step business flows | Affordance + transition capture, `INFERRED` flow assembly, per-step gating, `INFERRED → EXERCISED` promotion, partial-walk reporting (`docs/05` §19) |
 | [`known-failure-modes.md`](known-failure-modes.md) | Before building any phase | Eleven real defects with measured cost and the rule preventing each |
 | [`w7-api-evidence-contract.md`](w7-api-evidence-contract.md) | Any work touching API/network output | W7-A/B/C + AIC v1.0.0 preserved; derived views; one masking authority |
-| [`write-operations-and-test-data.md`](write-operations-and-test-data.md) | Before planning a write | `ALLOW_WRITE_TESTS` gate, run-scoped markers, persistence verification |
+| [`write-operations-and-test-data.md`](write-operations-and-test-data.md) | Before planning a write | The four-rung write ladder, per-surface gating, the irreversible proceed/revoke protocol, run-scoped markers, persistence verification, residue |
 | [`output-and-scope.md`](output-and-scope.md) | Setting up output | The `./output/qa/` tree, categories, stable IDs, provenance |
 | [`scope-enforcement.md`](scope-enforcement.md) | Env contract and scope checks | Environment variables, the scope check, cleanup and determinism |
 | [`final-report-md.md`](final-report-md.md) | Writing the human report | The 15 required sections and their content |
@@ -86,3 +105,10 @@ This is a **defensive** QA skill and performs no security testing. It defines no
 no ZAP / OWASP scanning, and does not participate in the skeptic/validator
 finding-verification loop. Its results are **functional QA results only**,
 recorded in `qa/raw/decision-history.jsonl` and `qa/report/`.
+
+**`SITE_EXPLORER_MODE=security-prep` does not change that.** The mode names the
+*consumer* of the application map, never the content of this skill's output: it deepens
+discovery and nothing else. It adds no finding, no CVSS, no severity, no exploitability
+and no security judgement, and it grants no authority a normal QA run would not have.
+A separate security skill may read `qa/discovery/` and `qa/network/`; producing a
+deeper map does not make this skill one.

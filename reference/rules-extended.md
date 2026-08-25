@@ -12,7 +12,12 @@
 12. **No caps, no silent drops.** No URL cap, per-category cap, or `slice(n)`.
     Every discovered artifact ends as `TESTED` or `EXCLUDED` with a reason in
     `qa/coverage/coverage-summary.json`; `unaccounted > 0` blocks a completeness
-    claim (`reference/coverage-ledger.md`).
+    claim (`reference/coverage-ledger.md`). A **declared** ceiling that emits one
+    ledger entry per excluded item, carrying the bound that stopped it, is an
+    exclusion and not a cap — the prohibition is on silent truncation. Route
+    instances additionally carry their own five states and, under
+    `SITE_EXPLORER_MODE=security-prep`, may not be excluded by sampling at all
+    (`reference/scope-enforcement.md`, `reference/discovery-profiling.md`).
 13. **Intent over availability.** A planned case binds only to a verified locator
     whose accessible name matches its stated intent. If none matches, DROP the
     case and ledger it `NO_INTENT_MATCH` — never substitute another element. A
@@ -38,10 +43,15 @@
     a clean pass (FM-4).
 19. **Baselines are per route.** A measurement on one route is evidence about
     that route only; never promote it to a global invariant (FM-2).
-20. **Writes are gated by `ALLOW_WRITE_TESTS`.** State-mutating QA tests require
-    `ALLOW_WRITE_TESTS=1` (W7-A BD-W7-3) plus synthetic data, mandatory cleanup,
-    scope + RoE, and disclosed mutation; application-delete tests are never
-    enabled. Absent or `0` ⇒ writes are ledgered, not silently skipped
+20. **Writes are gated, per surface, by one escalating ladder.** `ALLOW_SAFE_WRITES=1`
+    permits non-`GET` requests **measured** to change nothing; `ALLOW_WRITE_TESTS=1`
+    (W7-A BD-W7-3) permits create/update on **reversible** surfaces only, with
+    synthetic data, run-scoped markers, mandatory cleanup, scope + RoE and disclosed
+    mutation; an **irreversible** surface — one with no inverse affordance — runs only
+    when its own id is named in `ALLOW_IRREVERSIBLE_SURFACES`. Classification is
+    structural and measured, never lexical. Application-delete **feature** tests are
+    enabled by no value of any control. Anything not run is ledgered with the record
+    it would have created, never silently skipped
     (`reference/write-operations-and-test-data.md`).
 21. **QA output only — no security layer.** The output is limited to QA and
     application-exploration content: coverage is **Application Exploration

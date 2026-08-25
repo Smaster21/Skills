@@ -165,6 +165,9 @@ partial API capture, unstable environment.
 - [ ] `execution/execution-summary.json` generated
 - [ ] per-test evidence directory exists for every failed test (only real files)
 - [ ] retries recorded; locator healing recorded **only when attempted**
+- [ ] every write surface carries its classification, its gating control, whether it ran,
+      and — if declined — the record it would have created; irreversible records that ran
+      appear under residue with markers and **never** under `Records cleaned`
 - [ ] `coverage/coverage-summary.json` generated
 - [ ] `report/final-report.md` and `report/final-report.json` generated
 - [ ] stable IDs assigned; `observed`/`inferred`/`generated` preserved throughout
