@@ -71,6 +71,37 @@ in is what let a broken test be presented as validated coverage.
 Persist this as `execution/negative-control-sensitivity.json` and report the
 sensitivity totals beside the falsifiability totals.
 
+Minimum artifact shape:
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "gate": "B2 - Negative Control Sensitivity",
+  "normalRun": "execution/execution-summary.json",
+  "perturbedRun": "execution/gate-b-negative-control.json",
+  "totals": {
+    "sensitive": 119,
+    "vacuous": 0,
+    "inconclusive": 0,
+    "inconclusiveFailsRegardless": 0,
+    "notMeasured": 0
+  },
+  "perTest": [
+    {
+      "testCaseId": "TC-001",
+      "normal": "passed",
+      "perturbed": "failed",
+      "verdict": "SENSITIVE"
+    }
+  ]
+}
+```
+
+If B2 cannot run, write the artifact anyway with `state: "NOT_PRODUCED"`,
+`reason`, and `impact`, and do not count Gate B as proven coverage. A report may
+say "250 tests were falsifiable" only when Gate B ran; it may say "250 tests were
+sensitive" only when this B2 artifact proves the normal/perturbed pair.
+
 
 ### The probe MUST reproduce the test's conditions, not merely its route
 
@@ -97,4 +128,3 @@ Therefore:
   state it claimed to — `A2`/`A3` above exist to make that answerable.
 
 ---
-

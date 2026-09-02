@@ -66,12 +66,15 @@ is its owning `docs/` document. Phase behaviour and gates:
 ## Output
 
 Writes into **`./output/qa/`** only; run isolation is at the `./output/` boundary.
+The output is a contract: every file or directory named in the README, summary,
+or report must either exist on disk or be reported as `NOT_PRODUCED` / `EMPTY`
+with a reason and impact.
 
 | Category | Holds |
 |---|---|
 | `run.json` · `summary.json` · `README.md` | execution metadata, compact result, directory guide |
 | `report/` | `final-report.md` + `final-report.json` |
-| `discovery/` · `network/` · `knowledge/` | application contents, API activity, learned model |
+| `discovery/` · `network/` · `knowledge/` | application contents, workflow inputs (`transitions.json`, `affordances.json`), API activity, learned model |
 | `planning/` · `tests/` · `execution/` | plan, generated suite + `catalogue.json`, results |
 | `evidence/` · `coverage/` · `diagnostics/` | artifacts, QA coverage, retries and healing |
 | `raw/` | low-level event streams |
@@ -79,6 +82,11 @@ Writes into **`./output/qa/`** only; run isolation is at the `./output/` boundar
 One artifact, one category. Stable IDs join *page → workflow → test → execution →
 evidence*, reusing AIC identifiers verbatim where they exist. Contracts:
 `reference/output-and-scope.md`, `final-report-md.md`, `final-report-json.md`.
+Before reporting, API exercised state is reconciled from `tests/catalogue.json`
+back into `network/api-inventory.json`, Gate B2 sensitivity is written to
+`execution/negative-control-sensitivity.json` or explicitly marked
+`NOT_PRODUCED`, and `evidence/evidence-inventory.json` explains every empty
+evidence directory.
 
 ## Tools
 

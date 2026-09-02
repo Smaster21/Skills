@@ -118,6 +118,8 @@ irreversible surface needs its own opt-in (`write-operations-and-test-data.md`).
 qa/planning/test-plan.json
 qa/raw/decision-history.jsonl → decision-000N.json
 qa/coverage/ + qa/diagnostics/coverage-ledger.json    ← every population accounted, unaccounted = 0
+qa/discovery/transitions.json + qa/discovery/affordances.json
+  ← mandatory workflow inputs; embedding equivalent data elsewhere is not enough
 ```
 
 ## 6a. Review the plan (Phase 4A) — deterministic first, then advisory
@@ -167,6 +169,19 @@ count describes the suite; only the ledger describes the application
 (`coverage-ledger.md`). Disclose skipped scope, degraded/absent optional engines,
 and every gap.
 
+Before the report is accepted, reconcile all cross-artifact claims:
+
+- API tests in `tests/catalogue.json` update the derived `network/api-inventory.json`
+  state to `EXERCISED` and list their `TC-...` ids.
+- Gate B2 writes `execution/negative-control-sensitivity.json`, or that artifact
+  says `NOT_PRODUCED` with reason and impact.
+- `README.md` is generated from the actual filesystem plus explicit
+  `NOT_PRODUCED` / `EMPTY` states; it never lists a missing artifact as present.
+- `evidence/evidence-inventory.json` accounts for every evidence subdirectory,
+  including empty ones, and names where equivalent records live.
+- The human report starts each major section in plain language and translates
+  framework terms before using them.
+
 ```
 qa/summary.json                      ← the single file to read first
 qa/execution/{results.json,results.xml,html/}
@@ -188,6 +203,10 @@ Emit the evidence chain in the decision records: per-item confidence →
 - Execution: passed / failed / skipped, reconciled against the runner.
 - Ledger: discovered / tested / excluded per population; `unaccounted` MUST be 0.
 - Verified-but-unused count; any target vs suite vs environment defect.
+- API reconciliation: every exercised endpoint carries its `TC-...` ids in the
+  network inventory and report.
+- Output truthfulness: every README/report path either exists or is explicitly
+  `NOT_PRODUCED` / `EMPTY`.
 
 ## Never
 
@@ -197,4 +216,10 @@ Emit the evidence chain in the decision records: per-item confidence →
 - Never hand-write an application-specific selector, class, URL prefix or literal.
 - Never bind a case to a locator that does not match its stated intent.
 - Never present a single-browser run, one with unaccounted artifacts, or one whose ceiling excluded instances, as complete.
+- Never let `summary.json`, `network/api-inventory.json`, `tests/catalogue.json`,
+  and `final-report.*` disagree about whether an API was exercised.
+- Never list optional runner artifacts (`results.xml`, HTML report, traces,
+  videos) as present unless they exist on disk.
+- Never use a bare `null`, `false`, `0`, or `[]` to mean an unavailable
+  measurement where W7-B absence vocabulary applies.
 - Never `sudo`, `install-deps`, or modify the host environment.

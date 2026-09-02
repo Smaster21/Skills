@@ -1,3 +1,7 @@
 .claude
 output
 skill_walkthrough.md
+.codex
+.agents
+runs
+site-explorer-ui-report.html

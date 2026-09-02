@@ -26,6 +26,27 @@ filenames. API entries **reuse AIC identifiers verbatim** and carry the W7-B
 state and `provenance.discoverySource` — the JSON is a projection of the AIC, not
 a second API model (`w7-api-evidence-contract.md`).
 
+### Cross-artifact reconciliation before reporting
+
+Before writing `summary.json` or either final report, reconcile these sources and
+fail Phase 10 on any unexplained conflict:
+
+| Claim | Must reconcile against |
+|---|---|
+| tests generated / executed / passed / failed / skipped / blocked | `tests/catalogue.json` + `execution/results.json` + `execution/execution-summary.json` |
+| API endpoints exercised | `tests/catalogue.json` API entries + `network/api-inventory.json` + `summary.json` + `report/final-report.json` |
+| workflow count and status | `discovery/transitions.json` + `discovery/affordances.json` + `planning/test-plan.json` + `tests/catalogue.json` |
+| evidence counts | actual files on disk + `evidence/evidence-inventory.json` |
+| coverage totals | `coverage/coverage-summary.json` + report tables |
+| README paths | actual files/directories on disk + `NOT_PRODUCED` entries |
+
+API reconciliation is strict: if a generated or executed test carries `apiRef`
+and `aicId`, the corresponding `network/api-inventory.json` record MUST list the
+test under `exercisedByTests`, and the endpoint state/counts exposed to the
+report MUST show `EXERCISED`. An endpoint may be both observed and exercised over
+time, but the report's current state is the highest state reached by this run.
+Leaving `apisExercised: 0` while API tests passed is a reporting defect.
+
 ---
 
 ## `summary.json` — compact result
@@ -58,6 +79,25 @@ could not run to a verdict; failed means it ran and the expectation was not met.
 `js`/`sitemap`/`robots` are `DISCOVERED` and reported separately — conflating them
 would claim calls that never happened. Absent values use the W7-B vocabulary
 (`UNAVAILABLE`, `NOT_OBSERVED`, `NOT_PRODUCED`), never bare `0` or `null`.
+
+`playwright_artifacts_available` is true only when at least one runner artifact
+intended for human debugging exists, such as trace, video, failure screenshot,
+error context, XML, or HTML report. Discovery screenshots and JSON result files
+are evidence, but they do not make this boolean true by themselves. Prefer an
+object when possible:
+
+```json
+{
+  "playwright_artifacts": {
+    "state": "PARTIAL",
+    "traces": 0,
+    "videos": 0,
+    "failure_screenshots": 0,
+    "html_report": "NOT_PRODUCED",
+    "xml_report": "NOT_PRODUCED"
+  }
+}
+```
 
 ---
 
@@ -113,6 +153,23 @@ evidence/tests/TC-LOGIN-001/
 Create **only files that actually exist**. `failure.json` must be understandable
 without opening the trace.
 
+`evidence/evidence-inventory.json` records every evidence subdirectory, including
+empty ones:
+
+```json
+{
+  "screenshots": { "count": 184, "state": "PRESENT" },
+  "tests": { "count": 0, "state": "EMPTY", "reason": "final pass had 0 failed tests" },
+  "traces": { "count": 0, "state": "NOT_PRODUCED", "reason": "trace capture disabled" },
+  "videos": { "count": 0, "state": "NOT_PRODUCED", "reason": "video capture disabled" },
+  "network": { "count": 0, "state": "EMPTY", "equivalentEvidence": "raw/api-calls-*.json" }
+}
+```
+
+The human report uses the same wording. It says "network capture files" only when
+files exist in the named evidence location; otherwise it says "network records"
+and gives their real path.
+
 ---
 
 ## `README.md` — plain-language directory guide
@@ -133,6 +190,16 @@ qa/
 ```
 
 Generated at the end of every run, never hand-maintained.
+
+The README is a filesystem index, not a template. It is built after artifacts are
+written, and each line is one of:
+
+- `<path> -> <plain meaning>` when the path exists;
+- `<path> -> NOT_PRODUCED: <reason>` when the artifact is optional or unavailable;
+- `<path> -> EMPTY: <reason>` when an empty directory is intentionally retained.
+
+Do not list optional files such as `results.xml`, `execution/html/`, traces, or
+videos as present unless the path exists.
 
 ---
 
@@ -161,8 +228,10 @@ partial API capture, unstable environment.
 - [ ] output root is `./output/qa/`; nothing written to `findings/`, `security/`, `redops/`
 - [ ] `run.json`, `summary.json`, `README.md` generated
 - [ ] discovery, network, knowledge, workflow, planning artifacts generated
+- [ ] `discovery/transitions.json` and `discovery/affordances.json` generated, or workflow coverage is `UNAVAILABLE` with a wiring-gap limitation
 - [ ] `tests/catalogue.json` generated and traceable to generated specs
 - [ ] `execution/execution-summary.json` generated
+- [ ] `execution/negative-control-sensitivity.json` generated, or Gate B2 is explicitly `NOT_PRODUCED` and not counted as proven coverage
 - [ ] per-test evidence directory exists for every failed test (only real files)
 - [ ] retries recorded; locator healing recorded **only when attempted**
 - [ ] every write surface carries its classification, its gating control, whether it ran,
@@ -178,6 +247,10 @@ partial API capture, unstable environment.
 - [ ] `failed` and `blocked` are distinct everywhere
 - [ ] authenticated and unauthenticated modes each reported correctly
 - [ ] partial API capture reported with `api_capture_status` and a reason
+- [ ] API exercised state/counts match `tests/catalogue.json`; each exercised API lists its `TC-...` ids
+- [ ] `README.md` mentions only real paths or explicit `NOT_PRODUCED` / `EMPTY` states
+- [ ] `evidence/evidence-inventory.json` accounts for every evidence subdirectory, including empty ones
+- [ ] no meaningful `null`, `false`, `0`, or `[]` is used where W7-B absence vocabulary is required
 - [ ] report remains readable when sections are unavailable
 - [ ] identical input produces identical artifact names and locations
 - [ ] **every narrative claim about this run resolves to an artifact of this run** — each pass, defect, skipped engine, gate outcome and named directory exists on disk. No fixed narrative, no event or path carried over from a prior run (`final-report-md.md` → *Narrative sections are derived, never authored*)

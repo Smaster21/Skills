@@ -29,6 +29,7 @@ output root (`Rule 9`).
 │   ├── discovery-summary.json    pages.json          routes.json
 │   ├── application-map.json      forms.json          inputs.json
 │   ├── components.json           states.json
+│   ├── transitions.json          affordances.json
 │
 ├── network/                      DERIVED VIEW over the AIC — never canonical
 │   ├── network-summary.json      api-inventory.json  endpoints.json
@@ -50,9 +51,11 @@ output root (`Rule 9`).
 ├── execution/
 │   ├── execution-summary.json    test-results.json
 │   ├── failures.json             retries.json
+│   ├── negative-control-sensitivity.json
 │
 ├── evidence/
 │   ├── evidence-index.json
+│   ├── evidence-inventory.json
 │   ├── tests/TC-…/               per-test evidence (only files that exist)
 │   └── screenshots/  traces/  videos/  network/  raw/
 │
@@ -78,6 +81,28 @@ output root (`Rule 9`).
 A screenshot is evidence. A generated spec is `tests/generated/`. A route list is
 discovery. An endpoint inventory is network. A retry history is diagnostics. The
 report is `report/`. One artifact, one category.
+
+### Required vs optional artifacts
+
+The output tree is a contract, not a decoration. For every artifact named by the
+README, report, or summary, the run MUST do one of two things:
+
+1. write the artifact at the named path; or
+2. report it as `NOT_PRODUCED` with a reason and impact.
+
+A directory may exist with zero files only when its empty state is meaningful and
+explained in `evidence/evidence-inventory.json` or the owning summary. Common
+valid examples: `evidence/tests/` is empty because the final pass had zero failed
+tests; `evidence/traces/` is empty because trace capture was disabled. An empty
+`evidence/network/` while the report says "network capture files" exist is a
+contract mismatch unless the report names the actual storage location, for example
+`raw/api-calls-*.json`, and calls them "network records" rather than files in
+`evidence/network/`.
+
+`README.md` is generated from the filesystem inventory and the explicit
+`NOT_PRODUCED` ledger. It MUST NOT list `results.xml`, `execution/html/`, traces,
+videos, or any other optional runner output as present unless it exists on disk.
+If an optional artifact was intentionally skipped, the README says so plainly.
 
 ### Stable identifiers — mandatory
 
@@ -197,3 +222,9 @@ unknown, emit `null` — the step is then treated as write-intent and gated.
 **Planning reads exactly those two files.** Where either is absent or empty, the
 workflow list is empty and the limitation names which input was missing — a wiring
 gap, so it is never read as "this site has no flows".
+
+These files are not optional aliases for data embedded somewhere else. A run may
+also copy transition or affordance data into `application-model.json`, but the
+standalone files above are the inter-phase contract. If workflow tests are
+generated while either file is missing, Phase 10 MUST report a skill/output
+contract defect even when the workflows passed.

@@ -52,6 +52,26 @@ DISCOVERED → OBSERVED → EXERCISED → VALIDATED
 `exercised` is **derived from state**, never a stored boolean. `DISCOVERED` /
 `OBSERVED` ⇒ not exercised ⇒ not tested.
 
+### Post-execution API reconciliation
+
+After Phase 7, the derived `qa/network/api-inventory.json` view MUST be
+reconciled with `tests/catalogue.json` and `execution/execution-summary.json`.
+For each catalogue entry with `area: "api"` and both `apiRef` and `aicId`:
+
+1. find the matching API record by AIC id;
+2. add the test id to `exercisedByTests`;
+3. promote the report-visible state to `EXERCISED` when that test reached a
+   verdict and drove the request;
+4. update `apisExercised` and all report/summary counts from that reconciled
+   view.
+
+The underlying observation history remains intact: an exercised endpoint still
+keeps its `OBSERVED` request/response evidence. The current state shown to
+readers is the highest state reached in this run. It is non-conformant for
+`summary.json` or `final-report.md` to report five exercised APIs while
+`network/api-inventory.json` says zero exercised, or for an endpoint table to say
+"observed and exercised" while its state column remains only `OBSERVED`.
+
 A hidden endpoint (from `js|sitemap|robots`, not page-linked) is recorded with
 provenance as `DISCOVERED` and is **never auto-exercised or auto-bypassed**. A
 `robots.txt` `Disallow` is intelligence — never a bypass grant.

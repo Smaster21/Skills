@@ -22,6 +22,33 @@ exploitability, attack priority, security coverage, or security recommendations.
 Never conclude "the application is secure" or "no vulnerabilities found" — those
 claims are outside what this skill measures.
 
+## Report type and voice
+
+The human deliverable is a **QA Automation Test Completion Report**. It follows
+the same practical shape as a test summary/completion report: scope, activity,
+result, coverage, variances, evidence, open gaps, and conclusion.
+
+Write for a QA tester, developer, project manager, and technical lead who have
+not read this skill. Every major section starts with one plain-language sentence
+answering "what does this mean?" before tables or framework vocabulary.
+
+Internal terms are allowed only when they are translated the first time they
+appear:
+
+| Internal term | Plain wording to include |
+|---|---|
+| provenance | where the expected result came from |
+| falsifiable | the test can fail when the checked behaviour is wrong |
+| vacuous | the test still passes when it should fail, so it proves nothing |
+| UN_TARGETABLE | the tool could not safely choose one exact element |
+| tripwire | warning rule |
+| rung | locator strategy step |
+| AIC / W7-B | stored application/API evidence contract |
+
+If a section needs dense detail, put a short "In simple words" sentence first,
+then provide the precise table. Do not make readers learn framework internals to
+understand whether the run is useful.
+
 ---
 
 ## `report/final-report.md` — required sections
@@ -46,6 +73,49 @@ claims are outside what this skill measures.
 | 13b | Write Surfaces & Mutation | per surface: id, classification (`SAFE_WRITE` · `STATE_CREATING` · `IRREVERSIBLE`), the control that gated it, whether it ran, and the **residue accounting**. For every **declined** irreversible surface, the record it *would* have created. For every one that **ran**, the records left permanently, with markers. `Records cleaned` never includes an irreversible record (`write-operations-and-test-data.md`) |
 | 14 | Limitations & Disclosures | **mandatory** — what could not be explored, why, and the impact on the result. Includes **`NOT_EXERCISED` capability** (handling the target gave nothing to run) and, where any pipeline defect was found and fixed mid-run, that defect **derived from the run's own artifacts** |
 | 15 | Overall QA Conclusion | plain-language takeaway for a QA engineer |
+
+### Section detail requirements
+
+**API & Network Discovery** must distinguish three reader-facing counts:
+
+- discovered only: known from a spec, JavaScript, sitemap, robots, or crawl text,
+  but not witnessed as a request;
+- observed: witnessed in real browser/network traffic;
+- exercised: driven by a generated test, with the test ids shown.
+
+If an endpoint is exercised, the table says `EXERCISED` or includes an
+`Exercised by` column with `TC-...` ids. It must not say "not exercised" in one
+artifact and "exercised" in another. Any mismatch is a reporting defect.
+
+**Discovered Workflows** must include, for each workflow:
+
+- workflow id and name;
+- purpose in one short sentence;
+- starting page/route;
+- step list or compact step summary;
+- expected outcome and actual result;
+- observed API activity, or `NOT_OBSERVED`;
+- data changed, restored, or left as residue;
+- evidence references;
+- confidence/evidence state, or why unavailable.
+
+**Evidence Summary** must say where each evidence type actually lives. If an
+evidence directory is empty, explain why. Use "network records" when network
+evidence is stored as JSON records outside `evidence/network/`; reserve "network
+capture files" for actual files in the named capture directory.
+
+**Accessibility Observations** must include a summary plus references for:
+
+- un-named controls, with counts and affected routes or artifact path;
+- label coverage by route or a linked machine-readable table;
+- duplicate accessible names that block safe targeting;
+- pointer-interactive but not keyboard-reachable controls, or `NOT_OBSERVED` if
+  the measurement was not captured.
+
+**Execution Results** must separate phases when needed. For example, "0 session
+recoveries during final test execution" and "2 session recoveries during
+authenticated discovery" are both valid, but reporting only "session recoveries:
+0" while diagnostics says 2 is confusing and must be clarified.
 
 ### Narrative sections are derived, never authored
 
